@@ -44,7 +44,7 @@ class ModelName:
             dict: Training history containing metrics like loss per epoch
         """
 
-        # TODO: Implement training logic here
+        # TODO: Implement training logic here (Can use external libraries if needed)
         raise NotImplementedError("train method must be implemented")
         
     def tune_hyperparameters(self, hyperparameters, train_X, train_t, val_X, val_t):
@@ -64,7 +64,7 @@ class ModelName:
             dict: Best hyperparameters found during tuning
         """
 
-        # TODO: Implement hyperparameter tuning logic here
+        # TODO: Implement hyperparameter tuning logic here (Can use external libraries if needed)
         raise NotImplementedError("tune_hyperparameters method must be implemented")
         
     def predict(self, X):
