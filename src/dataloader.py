@@ -127,6 +127,9 @@ class DataLoader:
 
         train_list, val_list, test_list = [], [], []
 
+        train_size = train_size // len(self._labels)
+        val_size = val_size // len(self._labels)
+
         for label, group in self.data.groupby(self.data.columns[self._label_column]):
             group = group.sample(frac=1, random_state=self.seed).reset_index(drop=True)
 
