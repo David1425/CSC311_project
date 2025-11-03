@@ -4,34 +4,7 @@ from typing import Final
 import re
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
-
-DATA_COLUMNS: Final = {
-    'STUDENT_ID_COLUMN': 0,
-    'TEXT_COLUMNS': [1, 6, 9],
-    'MCQ_COLUMNS':  [2, 4, 7, 8],
-    'SELECTION_COLUMNS': [3, 5],
-    'LABEL_COLUMN': 10   
-}
-
-LABELS: Final = {
-    'ChatGPT': 0, 
-    'Claude': 1, 
-    'Gemini': 2
-}
-
-SELECTIONS: Final = {
-    'math computations': 0,
-    'writing or debugging code': 1,
-    'data processing or analysis': 2,
-    'explaining complex concepts simply': 3,
-    'converting content between formats': 4,
-    'writing or editing essays/reports': 5,
-    'drafting professional text': 6,
-    'brainstorming or generating creative ideas': 7
-}
-
-RAW_DATA_CSV_FP: Final = ["./train_data_raw.csv", "./validation_data_raw.csv", "./test_data_raw.csv"]
-PP_DATA_CSV_FP: Final = ["./train_data.csv", "./validation_data.csv", "./test_data.csv"]
+from helpers.constants import DATA_COLUMNS, LABELS, RAW_DATA_CSV_FP, PP_DATA_CSV_FP
 
 class DataLoader:
     """
@@ -45,7 +18,7 @@ class DataLoader:
         Args:
             seed: Random seed. If None, a random seed will be generated.
         """
-        self.seed = seed
+        self.seed = seed if seed is not None else 42
         np.random.seed(self.seed)
         self.bow_matrix = None
         self.vectorizer = None
@@ -56,24 +29,28 @@ class DataLoader:
         """
         Split and save all the data into train/val/test
         """
-        label_col = self.data.columns[DATA_COLUMNS['LABEL_COLUMN']]
-        train_and_valid_df, test_df = train_test_split(
-            self.data,
-            test_size=0.0325,
-            stratify=self.data[label_col],
-            random_state=self.seed
+        student_id_col = self.data.columns[DATA_COLUMNS['STUDENT_ID_COLUMN']]
+        unique_students = np.unique(self.data[student_id_col])
+        
+        # SPLIT BY STUDENT IDs
+        train_valid_students, test_students = train_test_split(
+            unique_students, test_size=0.0325, random_state=self.seed
         )
         
-        train_df, valid_df = train_test_split(
-            train_and_valid_df,
-            test_size=0.1875,
-            stratify=train_and_valid_df[label_col],
-            random_state=self.seed
+        train_students, val_students = train_test_split(
+            train_valid_students, test_size=0.1875, random_state=self.seed
         )
         
-        train_df.to_csv(RAW_DATA_CSV_FP[0], index=False)
-        valid_df.to_csv(RAW_DATA_CSV_FP[1], index=False)
-        test_df.to_csv(RAW_DATA_CSV_FP[2], index=False)
+        train_mask = np.isin(self.data[student_id_col], train_students)
+        val_mask = np.isin(self.data[student_id_col], val_students)
+        test_mask = np.isin(self.data[student_id_col], test_students)
+        
+        train_df_by_student_id = self.data[train_mask]
+        train_df_by_student_id.to_csv(RAW_DATA_CSV_FP[0], index=False)
+        val_df_by_student_id = self.data[val_mask]
+        val_df_by_student_id.to_csv(RAW_DATA_CSV_FP[1], index=False)
+        test_df_by_student_id = self.data[test_mask]
+        test_df_by_student_id.to_csv(RAW_DATA_CSV_FP[2], index=False)
 
 
     def _generate_mcq_col_feats(self):
@@ -127,10 +104,10 @@ class DataLoader:
             one_hot_cols.append(one_hot)
             
         if one_hot_cols:
-            # Add one-hot encoded columns to self.data, replacing existing selection col.s
+            # Add one-hot encoded columns to self.data, replacing existing selection col.s and empty values with -1.0
             encoded_cols = pd.concat(one_hot_cols, axis=1).reindex(self.data.index, fill_value=0)
             for ec in encoded_cols:
-                self.data[ec] = encoded_cols[ec]
+                self.data[ec] = encoded_cols[ec].fillna(-1.0)
     
     
     def read_csv(self, filepath):
