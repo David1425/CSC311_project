@@ -2,3 +2,4 @@ myenv
 models/__pycache__/decision_tree.cpython-313.pyc
 src/__pycache__/bagging_tree_model.cpython-313.pyc
 src/__pycache__/dataloader.cpython-313.pyc
+src/models/__pycache__/decision_tree/.cpython-313.pyc
