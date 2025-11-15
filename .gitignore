@@ -1,1 +1,5 @@
 myenv
+src/__pycache__
+src/models/__pycache__
+models/__pycache__
+src/helpers/__pycache__
