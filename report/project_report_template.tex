@@ -1,0 +1,187 @@
+% =========================================================
+% CSC311 Final Project Report Template
+% Single column, 12pt, 8 pages max.
+% =========================================================
+
+\documentclass[12pt]{article}
+
+% ---------- Packages ----------
+\usepackage[margin=1in]{geometry}
+\usepackage{parskip}         % blank line between paragraphs, no indent
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath, amssymb}
+\usepackage{siunitx}
+\usepackage[hidelinks]{hyperref}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{mathpazo}
+
+% ---------- Captions & Lists ----------
+\captionsetup{font=small, labelfont=bf}
+\setlist[itemize]{noitemsep, topsep=2pt}
+\setlist[enumerate]{noitemsep, topsep=2pt}
+
+% ---------- Helpful macros ----------
+\newcommand{\bestmodel}{\textit{[Best Model Name]}}
+\newcommand{\projacc}{\textbf{[XX.XX\%]}}
+
+% ---------- Safe figure helper ----------
+\makeatletter
+\newcommand{\maybeincludegraphics}[3]{%
+  \begin{figure}[h]
+    \centering
+    \IfFileExists{#1}{%
+      \includegraphics[width=0.7\linewidth]{#1}%
+    }{%
+      \fbox{%
+        \parbox[c][0.28\textheight][c]{0.7\linewidth}{%
+          \centering
+          \vspace{0.5em}
+          \textit{[Placeholder for \texttt{#1}]}\\
+          Add your figure here.
+          \vspace{0.5em}
+        }%
+      }%
+    }%
+    \caption{#2}
+    \label{#3}
+  \end{figure}%
+}
+\makeatother
+
+% =========================================================
+% Title Page
+% =========================================================
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{3cm}
+
+    {\Large {CSC311: Introduction to Machine Learning} \par}
+    \vspace{1cm}
+    
+    {\Large {Project Report} \par}
+    \vspace{1cm}
+    
+    {\large \textit{Optional Creative Project Title} \par}
+    \vspace{3cm}
+    
+    {\large Submitted by \par}
+    \vspace{0.5cm}
+    {\large Student 1, Student 2, Student 3, Student 4 \par}
+    
+    \vfill
+    {\large University of Toronto \\ Fall 2025 \par}
+\end{titlepage}
+\clearpage
+\setcounter{page}{1}
+
+% ================================================
+% 2. Executive Summary
+% ================================================
+\section{Executive Summary}
+
+This section should be at most 1/4 page (1 paragraph).
+
+\begin{itemize}
+  \item Summarize the model families you explored (at least three).  
+  \item State your best-performing model and its projected accuracy.  
+  \item Provide a high-level justification of why this model outperformed the others.  
+\end{itemize}
+
+% ==================================================
+% 3. Data Exploration
+% ==================================================
+\section{Data Exploration} 
+
+This section should be at most 1 page. 
+
+Why is data exploration important in a machine learning project?
+\begin{itemize}
+  \item Understand the dataset by identifying feature types (numerical, categorical, text), distributions, and class balance.  
+  \item Detect issues by finding missing values, outliers, or inconsistent entries that could harm model training.  
+  \item Inform pre-processing by deciding which transformations are needed (e.g., normalization, encoding, text vectorization).  
+  \item Guide model choice by identifying patterns (e.g., linear vs.\ nonlinear relationships) that suggest suitable algorithms.  
+  \item Generate insights by developing intuition about which features may be most predictive or relevant.  
+\end{itemize}
+
+What you should write in this section:
+\begin{itemize}
+  \item Summarize the dataset by describing the main feature types, distributions, and class balance.  
+  \item Identify issues you found such as missing values, outliers, or inconsistencies.  
+  \item Describe pre-processing by explaining what transformations you applied and why.  
+  \item Explain data splitting by describing how you reserved a portion of the data as a test set. This test set should \textbf{not} be used during data exploration.  
+  \item Use figures when helpful by including plots or tables and explaining what they reveal.  
+  \item Connect findings to model choices by highlighting patterns that influenced your selection of models.  
+  \item Share key insights by presenting observations about especially relevant or predictive features.  
+\end{itemize}
+
+Note: Each student contributes three data points (one per class). These three points are closely related, so if they are split across training, validation, and test sets, information from one could leak into another set. To avoid this data leakage, all three points from the same student must remain together in the same split.
+
+% ====================================
+% Methodology
+% ====================================
+\section{Methodology}
+
+This section should be at most 3 pages.
+
+What you should write in this section:
+\begin{itemize}
+  \item Present the three model families you used and explain why they are appropriate for the dataset.  
+  \item Describe the optimization techniques by specifying the optimizer (e.g., SGD, Adam), learning rate schedule if applicable, and any regularization or early stopping strategies.  
+  \item Explain the validation method by describing how you split the data into training and validation sets, or how you applied cross-validation. Summarize your hyperparameter tuning process by stating which hyperparameters you varied, how you chose values to try, and the evaluation metrics you used to compare them. Provide evidence that your hyperparameter choices are reasonable, noting that an exhaustive search is not required.  
+  \item Describe the evaluation metrics by explaining which metrics you used to evaluate your models. Use at least one additional metric (precision, recall, F1, etc.) beyond accuracy, and justify your choices.  
+  \item Provide implementation details by briefly describing the libraries or frameworks you used, and any custom code you wrote.  
+  \item (Optional) Describe any additional techniques you tried, such as feature engineering, clustering, or PCA.  
+\end{itemize}
+
+Common mistakes: 
+\begin{itemize}
+    \item Using the test set during training, feature engineering, or hyperparameter tuning. 
+    \item Tuning hyperparameters without a validation set that is separate from the training and test sets.  
+    \item Omitting important training details in the report, making results hard to reproduce.  
+    \item Jumping straight to deep networks when a simpler model might be sufficient and more interpretable.  
+    \item Choosing the best model based only on default hyperparameters, then tuning only that model. This is unfair because other models might improve significantly with tuning as well. \textbf{This is the most common mistake we observed while grading the reports in winter 2025.}
+    \item Presenting tables or plots without labels, units, or explanations.  
+    \item Reporting only accuracy and ignoring other evaluation metrics such as precision, recall, or F1.  
+\end{itemize}
+
+% ===========================================
+% 5. Results
+% ===========================================
+\section{Results}\label{sec:results}
+
+This section should be at most 1 page.
+
+What you should write in this section:
+\begin{itemize}
+  \item Report the results of your models using the evaluation metrics you described in the Methodology section, and present them clearly in tables or plots.  
+  \item Analyze errors by describing common misclassifications or weaknesses, and include a confusion matrix or illustrative examples if helpful.  
+  \item Compare models by summarizing performance across model families, and clearly state your final model choice as implemented in your prediction script.  
+  \item Estimate test performance by \textbf{providing a single-number estimate of your best model’s accuracy on the unseen test set}. Providing a range will earn \textbf{no} marks.  
+  \item Justify your performance estimate by supporting it with empirical evidence such as validation results, cross-validation stability, learning curves, or consistency across seeds/folds.  
+\end{itemize}
+
+% ================================================
+% 8. Contributions and Learning
+% ================================================
+\section{Contributions and Learning}
+
+This section should contain a list of 3–4 bullets, one for each student. Each student should write at most three sentences describing their main contributions and the most important lesson learned.
+
+% ==================================================
+% 9. References
+% ==================================================
+\section{References}
+
+You should comment out this section for the final report.
+
+Use references whenever appropriate (e.g., when you consult textbooks, research papers, online tutorials, or external code). Cite in the text using \verb|\cite{}|. For example, let's cite the two references provided in the \texttt{.bib} file \cite{bishop2006prml,hastie2009esl}.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}
