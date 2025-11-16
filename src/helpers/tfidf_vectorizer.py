@@ -23,9 +23,6 @@ class TfidfVectorizer:
         'Gemini': 2
     }
 
-    _document_count = 0
-    _document_freq = {}
-
     def __init__(self, seed=None, truncate_length=4):
         """
         Initialize the vectorizer with an optional rng seed for reproducibility.
@@ -38,6 +35,11 @@ class TfidfVectorizer:
         np.random.seed(self.seed)
 
         self.truncate_length = truncate_length
+        
+        # Instance variables instead of class variables
+        self._document_count = 0
+        self._document_freq = {}
+        self._word_to_index = {}  # Cache for fast word lookup
     
     def read_csv(self, filepath, verbose=True):
         """
@@ -58,21 +60,21 @@ class TfidfVectorizer:
         if verbose:
             print("Cleaning data...")
 
-        def truncate_text(text):
-            return ' '.join([word[:self.truncate_length] for word in text.split()])
+        def clean_and_truncate_text(text):
+            text = str(text).lower()
+            text = text.replace('#name?', '')
+            words = []
+            for word in text.split():
+                cleaned_word = ''.join(c for c in word if c.isalpha())
+                if len(cleaned_word) >= 2:
+                    truncated_word = cleaned_word[:self.truncate_length]
+                    words.append(truncated_word)
+            
+            return ' '.join(words)
 
         for idx in self._text_columns:
             col = self.data.columns[idx]
-            self.data[col] = (
-                self.data[col]
-                .astype(str)
-                .str.lower()
-                .str.replace('#name?', '', regex=False)
-                .str.replace(r'[^a-z]', ' ', regex=True)
-                .str.strip()
-                .apply(truncate_text)
-                .str.replace(r'\s+', ' ', regex=True)
-            )
+            self.data[col] = self.data[col].apply(clean_and_truncate_text)
         
         for idx in self._rating_columns:
             col = self.data.columns[idx]
@@ -121,16 +123,23 @@ class TfidfVectorizer:
 
         data = self.read_csv(data_path, verbose=verbose)
 
+        # Count documents correctly - once per row, not per text column
+        self._document_count = len(data)
+        
         for idx in self._text_columns:
             col = data.columns[idx]
             for text in data[col]:
                 words = text.split()
-                for word in words:
-                    if word not in self._document_freq:
-                        self._document_freq[word] = 0
-                    self._document_freq[word] += 1
-                
-                self._document_count += 1
+                # Use set to count each word once per document (document frequency)
+                unique_words = set(words)
+                for word in unique_words:
+                    if word and word.strip():  # Skip empty strings
+                        if word not in self._document_freq:
+                            self._document_freq[word] = 0
+                        self._document_freq[word] += 1
+        
+        # Build word-to-index mapping for fast lookup
+        self._word_to_index = {word: idx for idx, word in enumerate(self._document_freq.keys())}
     
     def get_tfidf(self, text, normalize=True):
         """
@@ -144,16 +153,30 @@ class TfidfVectorizer:
         """
         words = text.split()
         tfidf_vector = np.zeros(len(self._document_freq))
-
+        
+        # Handle empty text
+        if not words:
+            return tfidf_vector
+        
+        # Build term frequency dictionary (more efficient than repeated count())
+        word_freq = {}
         for word in words:
-            if word in self._document_freq:
-                tf = words.count(word) / len(words)
+            word_freq[word] = word_freq.get(word, 0) + 1
+        
+        # Calculate TF-IDF for each unique word
+        num_words = len(words)
+        for word, count in word_freq.items():
+            if word in self._word_to_index:
+                tf = count / num_words
                 idf = np.log((self._document_count + 1) / (self._document_freq[word] + 1)) + 1
-                index = list(self._document_freq.keys()).index(word)
+                index = self._word_to_index[word]
                 tfidf_vector[index] = tf * idf
 
-        if np.linalg.norm(tfidf_vector) > 0 and normalize:
-            tfidf_vector = tfidf_vector / np.linalg.norm(tfidf_vector)
+        if normalize:
+            norm = np.linalg.norm(tfidf_vector)
+            if norm > 0:
+                tfidf_vector = tfidf_vector / norm
+                
         return tfidf_vector
 
     def generate_Xt(self, data_path: str, normalize=True, verbose=True):
@@ -177,10 +200,15 @@ class TfidfVectorizer:
 
         for _, row in data.iterrows():
             feature_vector = []
-            for idx in self._text_columns:
-                col = data.columns[idx]
-                tfidf_vector = self.get_tfidf(row[col], normalize=normalize)
-                feature_vector.extend(tfidf_vector.tolist())
+            
+            # for idx in self._text_columns:
+            #     col = data.columns[idx]
+            #     tfidf_vector = self.get_tfidf(row[col], normalize=normalize)
+            #     feature_vector.extend(tfidf_vector.tolist())
+            
+            combined_text = ' '.join([row[data.columns[idx]] for idx in self._text_columns])
+            tfidf_vector = self.get_tfidf(combined_text, normalize=normalize)
+            feature_vector.extend(tfidf_vector.tolist())
             
             for idx in self._rating_columns:
                 col = data.columns[idx]
