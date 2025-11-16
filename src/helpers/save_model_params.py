@@ -79,11 +79,30 @@ def extract_mlp_to_dict(mlp, feature_names=None):
     
     return mlp_dict
 
-def extract_tree_to_dict(tree, feature_names=None):
+def extract_tree_to_dict(tree, feature_names=None, classes=None):
+    """
+    Extract sklearn DecisionTreeClassifier to a JSON-serializable dictionary.
+    
+    Parameters:
+    -----------
+    tree : sklearn.tree.DecisionTreeClassifier
+        Fitted decision tree model
+    feature_names : list, optional
+        Names of input features
+    classes : array-like, optional
+        Class labels for mapping predictions
+        
+    Returns:
+    --------
+    dict : Dictionary containing tree structure and metadata
+    """
     tree_ = tree.tree_
     
     if feature_names is None:
         feature_names = [f"feature_{i}" for i in range(tree_.n_features)]
+    
+    if classes is None and hasattr(tree, 'classes_'):
+        classes = tree.classes_.tolist()
     
     def build_json(node_id, depth):
         left_child = tree_.children_left[node_id]
@@ -136,4 +155,134 @@ def extract_tree_to_dict(tree, feature_names=None):
         'tree': tree_structure
     }
     
+    if classes is not None:
+        tree_dict['metadata']['classes'] = classes if isinstance(classes, list) else classes.tolist()
+    
     return tree_dict
+
+
+def extract_bagging_to_dict(bagging_model, feature_names=None):
+    """
+    Extract sklearn BaggingClassifier to a JSON-serializable dictionary.
+    
+    Parameters:
+    -----------
+    bagging_model : sklearn.ensemble.BaggingClassifier
+        Fitted bagging ensemble model
+    feature_names : list, optional
+        Names of input features
+        
+    Returns:
+    --------
+    dict : Dictionary containing all trees and ensemble metadata
+    """
+    from sklearn.tree import DecisionTreeClassifier
+    
+    if feature_names is None:
+        feature_names = [f"feature_{i}" for i in range(bagging_model.n_features_in_)]
+    
+    # Get classes from the bagging model
+    classes = bagging_model.classes_.tolist()
+    
+    # Extract each estimator (tree) with its feature subset
+    trees = []
+    estimators_features = []
+    
+    for idx, estimator in enumerate(bagging_model.estimators_):
+        if isinstance(estimator, DecisionTreeClassifier):
+            # Get the feature indices used by this tree
+            if hasattr(bagging_model, 'estimators_features_'):
+                feature_indices = bagging_model.estimators_features_[idx].tolist()
+            else:
+                # If no feature subsampling, use all features
+                feature_indices = list(range(bagging_model.n_features_in_))
+            
+            # Create feature names for this tree's subset
+            tree_feature_names = [feature_names[i] for i in feature_indices]
+            
+            tree_dict = extract_tree_to_dict(estimator, tree_feature_names, classes)
+            trees.append(tree_dict['tree'])
+            estimators_features.append(feature_indices)
+        else:
+            raise ValueError(f"Unsupported estimator type: {type(estimator)}")
+    
+    ensemble_dict = {
+        'metadata': {
+            'model_type': 'BaggingClassifier',
+            'n_estimators': int(bagging_model.n_estimators),
+            'n_features': int(bagging_model.n_features_in_),
+            'n_classes': int(len(bagging_model.classes_)),
+            'classes': bagging_model.classes_.tolist(),
+            'feature_names': feature_names,
+            'max_samples': bagging_model.max_samples,
+            'max_features': bagging_model.max_features,
+            'bootstrap': bool(bagging_model.bootstrap),
+            'bootstrap_features': bool(bagging_model.bootstrap_features),
+            'oob_score': bool(bagging_model.oob_score),
+            'warm_start': bool(bagging_model.warm_start),
+            'random_state': int(bagging_model.random_state) if bagging_model.random_state is not None else None
+        },
+        'trees': trees,
+        'estimators_features': estimators_features
+    }
+    
+    # Add OOB score if available
+    if hasattr(bagging_model, 'oob_score_'):
+        ensemble_dict['metadata']['oob_score_value'] = float(bagging_model.oob_score_)
+    
+    return ensemble_dict
+
+
+def extract_boosting_to_dict(boosting_model, feature_names=None):
+    """
+    Extract sklearn AdaBoostClassifier to a JSON-serializable dictionary.
+    
+    Parameters:
+    -----------
+    boosting_model : sklearn.ensemble.AdaBoostClassifier
+        Fitted boosting ensemble model
+    feature_names : list, optional
+        Names of input features
+        
+    Returns:
+    --------
+    dict : Dictionary containing all trees, weights, and ensemble metadata
+    """
+    from sklearn.tree import DecisionTreeClassifier
+    
+    if feature_names is None:
+        feature_names = [f"feature_{i}" for i in range(boosting_model.n_features_in_)]
+    
+    # Get classes from the boosting model
+    classes = boosting_model.classes_.tolist()
+    
+    # Extract each estimator (tree) and its weight
+    trees = []
+    for estimator in boosting_model.estimators_:
+        if isinstance(estimator, DecisionTreeClassifier):
+            tree_dict = extract_tree_to_dict(estimator, feature_names, classes)
+            trees.append(tree_dict['tree'])
+        else:
+            raise ValueError(f"Unsupported estimator type: {type(estimator)}")
+    
+    # Convert estimator weights to list
+    tree_weights = [float(w) for w in boosting_model.estimator_weights_]
+    
+    ensemble_dict = {
+        'metadata': {
+            'model_type': 'AdaBoostClassifier',
+            'n_estimators': int(boosting_model.n_estimators),
+            'n_features': int(boosting_model.n_features_in_),
+            'n_classes': int(len(boosting_model.classes_)),
+            'classes': boosting_model.classes_.tolist(),
+            'feature_names': feature_names,
+            'learning_rate': float(boosting_model.learning_rate),
+            'algorithm': boosting_model.algorithm,
+            'random_state': int(boosting_model.random_state) if boosting_model.random_state is not None else None
+        },
+        'trees': trees,
+        'tree_weights': tree_weights,
+        'estimator_errors': [float(e) for e in boosting_model.estimator_errors_] if hasattr(boosting_model, 'estimator_errors_') else []
+    }
+    
+    return ensemble_dict
