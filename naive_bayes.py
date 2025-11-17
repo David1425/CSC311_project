@@ -29,7 +29,7 @@ class NaiveBayesModel:
     # TODO: Put any needed helper functions here
     # e.g., debugging utilities, model-specific methods, forward pass, back propagation etc.
 
-    def __init__(self, smoothing: float = 1.0, method: str = 'mle'): 
+    def __init__(self, smoothing: float = 0, method: str = 'mle'): 
         """
         Bernoulli Naive Bayes (multiclass) with additive smoothing (Laplace).
         
@@ -144,8 +144,8 @@ class NaiveBayesModel:
                 feature_offsets[col_idx] = (offset, offset + Vj)
                 offset += Vj
             for col_idx in likert_indices:
-                feature_offsets[col_idx] = (offset, offset + 5)
-                offset += 5
+                feature_offsets[col_idx] = offset
+                offset += 1
 
             # Total dimension
             D = offset
@@ -194,8 +194,8 @@ class NaiveBayesModel:
                 if col_idx < len(row):
                     val = NaiveBayesModel.extract_likert_scale(row[col_idx])
                     if 1 <= val <= 5:
-                        start, end = feature_offsets[col_idx]
-                        X[i, start + (val - 1)] = 1.0
+                        start = feature_offsets[col_idx]
+                        X[i, start] = val
             # Label
             if 'label' in name_to_idx:
                 lbl = str(row[name_to_idx['label']]).strip()
@@ -253,7 +253,6 @@ class NaiveBayesModel:
         self._log_1m_theta = np.log(1.0 - self.theta)
         return self.pi, self.theta
 
-
     @staticmethod
     def naive_bayes_map(X, t, num_classes: int = 3):
         """
@@ -280,14 +279,20 @@ class NaiveBayesModel:
 
         # Class prior with Beta prior equivalent to Dirichlet(1,1,...)?
         class_counts = np.bincount(t, minlength=C).astype(np.float64)
+
+        # MAP estimate for pi
         pi = (class_counts + (a - 1)) / (N + C * (a + b - 2))
 
         # Feature likelihoods with Beta(a,b)
         Y = np.eye(C, dtype=np.float64)[t]
         counts_1 = X.T @ Y  # [V, C]
-        denom = class_counts + (a + b - 2)  # [C]
-        theta = (counts_1 + (a - 1)) / denom
+
+        # MAP estimate for theta
+        theta = (counts_1 + (a - 1)) / (class_counts + (a + b - 2))
+
+        # Numerical safety
         theta = np.clip(theta, 1e-9, 1 - 1e-9)
+
         return pi, theta
         
     def train(self, train_X, train_t, learning_rate=None, batch_size=None, n_epochs: int = 1):
@@ -340,6 +345,7 @@ class NaiveBayesModel:
             raise ValueError("Model is not trained. Call train() first.")
 
         # Compute log P(c) + sum_j [ x_j log theta_jc + (1-x_j) log (1-theta_jc) ]
+        # Use numpy sum
         log_pi = np.log(self.pi + 1e-12)  # [C]
         # [N, V] @ [V, C] -> [N, C]
         term_pos = X @ self._log_theta
