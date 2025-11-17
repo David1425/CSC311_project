@@ -26,11 +26,10 @@ class NaiveBayesModel:
     """
     A template class for machine learning models.
     """
-    # Hello
     # TODO: Put any needed helper functions here
     # e.g., debugging utilities, model-specific methods, forward pass, back propagation etc.
 
-    def __init__(self, smoothing: float = 1.0, method: str = 'mle'): # TODO: Consider adding hyperparameters/branch out to diff versions of Naive Bayes
+    def __init__(self, smoothing: float = 1.0, method: str = 'mle'): 
         """
         Bernoulli Naive Bayes (multiclass) with additive smoothing (Laplace).
         
