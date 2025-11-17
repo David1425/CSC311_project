@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  15 NOV 2025 13:38
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  17 NOV 2025 16:09
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -463,41 +463,29 @@ Overfull \hbox (0.50655pt too wide) in paragraph at lines 134--135
 
 
 
-[2]
-
-LaTeX Warning: Citation `bishop2006prml' on page 3 undefined on input line 182.
-
-
-LaTeX Warning: Citation `hastie2009esl' on page 3 undefined on input line 182.
-
-No file project_report_template.bbl.
-
+[2] (./project_report_template.bbl)
 
 [3] (./project_report_template.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
-
-
-LaTeX Warning: There were undefined references.
-
 Package rerunfilecheck Info: File `project_report_template.out' has not changed.
 (rerunfilecheck)             Checksum: B6888454CA77F97EEF5AC29396FF5880;705.
  ) 
 Here is how much of TeX's memory you used:
- 16374 strings out of 473190
- 317257 string characters out of 5715801
- 694198 words of memory out of 5000000
- 39466 multiletter control sequences out of 15000+600000
- 566207 words of font info for 52 fonts, out of 8000000 for 9000
+ 16387 strings out of 473190
+ 317531 string characters out of 5715801
+ 694269 words of memory out of 5000000
+ 39472 multiletter control sequences out of 15000+600000
+ 567272 words of font info for 54 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  73i,6n,80p,608b,1126s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/urw/palatino/uplb8a.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/urw/palatino/uplr8a.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/urw/palatino/uplri8a.pfb>
-Output written on project_report_template.pdf (4 pages, 63488 bytes).
+Output written on project_report_template.pdf (4 pages, 67567 bytes).
 PDF statistics:
- 72 PDF objects out of 1000 (max. 8388607)
- 57 compressed objects within 1 object stream
- 10 named destinations out of 1000 (max. 500000)
+ 78 PDF objects out of 1000 (max. 8388607)
+ 63 compressed objects within 1 object stream
+ 13 named destinations out of 1000 (max. 500000)
  49 words of extra memory for PDF output out of 10000 (max. 10000000)
 

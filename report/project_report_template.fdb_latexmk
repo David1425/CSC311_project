@@ -1,14 +1,14 @@
 # Fdb version 4
-["bibtex project_report_template"] 0 "project_report_template.aux" "project_report_template.bbl" "project_report_template" 0 0
+["bibtex project_report_template"] 1763413781.55958 "project_report_template.aux" "project_report_template.bbl" "project_report_template" 1763413783.1339 0
+  "./references.bib" 1763413778.96254 406 73462672a50399e4baba3e3a76c89be9 ""
   "/usr/local/texlive/2025/texmf-dist/bibtex/bst/base/plain.bst" 1292289607 20613 bd3fbfa9f64872b81ac57a0dd2ed855f ""
-  "project_report_template.aux" 0 -1 0 "pdflatex"
-  "references.bib" 0 -1 0 ""
+  "project_report_template.aux" 1763413782.73858 1028 8e22dacaa4b44e3df32012fcef460227 "pdflatex"
   (generated)
   "project_report_template.bbl"
   "project_report_template.blg"
   (rewritten before read)
-["pdflatex"] 1763231890.83435 "/Users/frederickmeneses/Documents/csc311/project/CSC311_project/report/project_report_template.tex" "project_report_template.pdf" "project_report_template" 1763231892.11923 0
-  "/Users/frederickmeneses/Documents/csc311/project/CSC311_project/report/project_report_template.tex" 1763231871.84942 8972 22e04f4ba776d9c87050426a661e96b0 ""
+["pdflatex"] 1763413781.7219 "/Users/frederickmeneses/Documents/csc311/project/CSC311_project/report/project_report_template.tex" "project_report_template.pdf" "project_report_template" 1763413783.13412 0
+  "/Users/frederickmeneses/Documents/csc311/project/CSC311_project/report/project_report_template.tex" 1763413778.96223 8972 22e04f4ba776d9c87050426a661e96b0 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/palatino/pplb7t.tfm" 1136768653 1616 371d1ee60c04b008c8fd760060cd34f1 ""
@@ -98,10 +98,10 @@
   "/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1741819295 5467155 19efa205003f9ecad95fbbaa6ff24da1 ""
   "/usr/local/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt" 1741450574 3345740 46b66fdb0378f7bf5921b5eabf1762b8 ""
   "/usr/local/texlive/2025/texmf.cnf" 1741450484 577 418a7058ec8e006d8704f60ecd22c938 ""
-  "project_report_template.aux" 1763231891.77035 973 0f79787297ca72c2f99a98da6919a1ea "pdflatex"
-  "project_report_template.bbl" 0 -1 0 "bibtex project_report_template"
-  "project_report_template.out" 1763231891.77097 705 b6888454ca77f97eef5ac29396ff5880 "pdflatex"
-  "project_report_template.tex" 1763231871.84942 8972 22e04f4ba776d9c87050426a661e96b0 ""
+  "project_report_template.aux" 1763413782.73858 1028 8e22dacaa4b44e3df32012fcef460227 "pdflatex"
+  "project_report_template.bbl" 1763413781.71907 383 5ec76216c2f90c8bf5202cda37500616 "bibtex project_report_template"
+  "project_report_template.out" 1763413782.73914 705 b6888454ca77f97eef5ac29396ff5880 "pdflatex"
+  "project_report_template.tex" 1763413778.96223 8972 22e04f4ba776d9c87050426a661e96b0 ""
   (generated)
   "project_report_template.aux"
   "project_report_template.log"

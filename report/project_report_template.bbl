@@ -1,0 +1,13 @@
+\begin{thebibliography}{1}
+
+\bibitem{bishop2006prml}
+Christopher~M. Bishop.
+\newblock {\em Pattern Recognition and Machine Learning}.
+\newblock Springer, 2006.
+
+\bibitem{hastie2009esl}
+Trevor Hastie, Robert Tibshirani, and Jerome Friedman.
+\newblock {\em The Elements of Statistical Learning: Data Mining, Inference, and Prediction}.
+\newblock Springer, 2009.
+
+\end{thebibliography}
