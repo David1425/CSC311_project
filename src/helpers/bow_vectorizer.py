@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-class TfidfVectorizer:
+class BowVectorizer:
     _id_coloumn = 0
     _text_columns = [1, 6, 9]
     _selection_columns = [3, 5]
@@ -40,10 +40,7 @@ class TfidfVectorizer:
         self.n_components = n_components
         self.scale_numeric = scale_numeric
         
-        # Instance variables instead of class variables
-        self._document_count = 0
-        self._document_freq = {}
-        self._word_to_index = {}  # Cache for fast word lookup
+        self._word_to_index = {}
         self._svd_components = None  # Will store the SVD transformation matrix
         self._text_mean = None  # Mean for centering before SVD
         self._numeric_scale = 1.0  # Scaling factor for numeric features
@@ -130,61 +127,49 @@ class TfidfVectorizer:
 
         data = self.read_csv(data_path, verbose=verbose)
 
-        # Count documents correctly - once per row, not per text column
-        self._document_count = len(data)
+        # Build vocabulary - collect all unique words
+        vocab = set()
         
         for idx in self._text_columns:
             col = data.columns[idx]
             for text in data[col]:
                 words = text.split()
-                # Use set to count each word once per document (document frequency)
-                unique_words = set(words)
-                for word in unique_words:
+                for word in words:
                     if word and word.strip():  # Skip empty strings
-                        if word not in self._document_freq:
-                            self._document_freq[word] = 0
-                        self._document_freq[word] += 1
+                        vocab.add(word)
         
         # Build word-to-index mapping for fast lookup
-        self._word_to_index = {word: idx for idx, word in enumerate(self._document_freq.keys())}
+        self._word_to_index = {word: idx for idx, word in enumerate(sorted(vocab))}
     
-    def get_tfidf(self, text, normalize=True):
+    def get_bow(self, text, normalize=True):
         """
-        Get the TF-IDF vector for a given text.
+        Get the Bag of Words vector for a given text.
 
         Args:
             text: Input text string.
-            normalize: Whether to normalize the TF-IDF vector.
+            normalize: Whether to normalize the BoW vector.
         Returns:
-            Numpy array representing the TF-IDF vector.
+            Numpy array representing the BoW vector.
         """
         words = text.split()
-        tfidf_vector = np.zeros(len(self._document_freq))
+        bow_vector = np.zeros(len(self._word_to_index))
         
-        # Handle empty text
         if not words:
-            return tfidf_vector
+            return bow_vector
         
-        # Build term frequency dictionary (more efficient than repeated count())
         word_freq = {}
         for word in words:
             word_freq[word] = word_freq.get(word, 0) + 1
         
-        # Calculate TF-IDF for each unique word
-        num_words = len(words)
         for word, count in word_freq.items():
             if word in self._word_to_index:
-                tf = count / num_words
-                idf = np.log((self._document_count + 1) / (self._document_freq[word] + 1)) + 1
                 index = self._word_to_index[word]
-                tfidf_vector[index] = tf * idf
-
-        if normalize:
-            norm = np.linalg.norm(tfidf_vector)
-            if norm > 0:
-                tfidf_vector = tfidf_vector / norm
+                if normalize:
+                    bow_vector[index] = count / len(words)
+                else:
+                    bow_vector[index] = count
                 
-        return tfidf_vector
+        return bow_vector
 
     def generate_Xt(self, data_path: str, normalize=True, verbose=True):
         """
@@ -192,7 +177,7 @@ class TfidfVectorizer:
 
         Args:
             data_path: Path to the CSV data file.
-            normalize: Whether to normalize the TF-IDF vectors.
+            normalize: Whether to normalize the BoW vectors.
         Returns:
             Numpy array of features and target.
         """
@@ -208,17 +193,17 @@ class TfidfVectorizer:
         for _, row in data.iterrows():
             feature_vector = []
             
-            # Get TF-IDF vector and compress with SVD if available
+            # Get BoW vector and compress with SVD if available
             combined_text = ' '.join([row[data.columns[idx]] for idx in self._text_columns])
-            tfidf_vector = self.get_tfidf(combined_text, normalize=normalize)
+            bow_vector = self.get_bow(combined_text, normalize=normalize)
             
             if self._svd_components is not None:
                 # Use compressed representation
-                compressed_vector = self._compress_tfidf(tfidf_vector)
+                compressed_vector = self._compress_bow(bow_vector)
                 feature_vector.extend(compressed_vector.tolist())
             else:
-                # Use full TF-IDF vector
-                feature_vector.extend(tfidf_vector.tolist())
+                # Use full BoW vector
+                feature_vector.extend(bow_vector.tolist())
             
             # Add rating features with optional scaling
             for idx in self._rating_columns:
@@ -252,12 +237,12 @@ class TfidfVectorizer:
     
     def build_svd(self, data_path: str, normalize=True, verbose=True):
         """
-        Build SVD transformation matrix from training data TF-IDF vectors.
+        Build SVD transformation matrix from training data BoW vectors.
         This should be called once on training data before using generate_Xt.
 
         Args:
             data_path: Path to the CSV data file.
-            normalize: Whether to normalize the TF-IDF vectors.
+            normalize: Whether to normalize the BoW vectors.
             verbose: Whether to print progress.
         """
         if verbose:
@@ -265,18 +250,18 @@ class TfidfVectorizer:
 
         data = self.read_csv(data_path, verbose=verbose)
 
-        # Collect all TF-IDF vectors
-        tfidf_matrix = []
+        # Collect all BoW vectors
+        bow_matrix = []
         for _, row in data.iterrows():
             combined_text = ' '.join([row[data.columns[idx]] for idx in self._text_columns])
-            tfidf_vector = self.get_tfidf(combined_text, normalize=normalize)
-            tfidf_matrix.append(tfidf_vector)
+            bow_vector = self.get_bow(combined_text, normalize=normalize)
+            bow_matrix.append(bow_vector)
         
-        tfidf_matrix = np.array(tfidf_matrix)
+        bow_matrix = np.array(bow_matrix)
         
         # Center the data (subtract mean)
-        self._text_mean = np.mean(tfidf_matrix, axis=0)
-        centered_matrix = tfidf_matrix - self._text_mean
+        self._text_mean = np.mean(bow_matrix, axis=0)
+        centered_matrix = bow_matrix - self._text_mean
         
         # Perform SVD
         if verbose:
@@ -292,7 +277,7 @@ class TfidfVectorizer:
             # Calculate variance explained
             total_var = np.sum(S**2)
             explained_var = np.sum(S[:n_comp]**2) / total_var * 100
-            print(f"SVD complete. Reduced from {tfidf_matrix.shape[1]} to {n_comp} dimensions.")
+            print(f"SVD complete. Reduced from {bow_matrix.shape[1]} to {n_comp} dimensions.")
             print(f"Variance explained: {explained_var:.2f}%")
         
         # Calculate scaling factor for numeric features if needed
@@ -305,12 +290,12 @@ class TfidfVectorizer:
             if verbose:
                 print(f"Numeric feature scaling factor: {self._numeric_scale:.4f}")
     
-    def _compress_tfidf(self, tfidf_vector):
+    def _compress_bow(self, bow_vector):
         """
-        Compress a TF-IDF vector using the learned SVD transformation.
+        Compress a BoW vector using the learned SVD transformation.
 
         Args:
-            tfidf_vector: TF-IDF vector to compress.
+            bow_vector: BoW vector to compress.
         Returns:
             Compressed vector.
         """
@@ -318,7 +303,7 @@ class TfidfVectorizer:
             raise ValueError("SVD not built. Call build_svd() first on training data.")
         
         # Center and project onto SVD components
-        centered = tfidf_vector - self._text_mean
+        centered = bow_vector - self._text_mean
         compressed = np.dot(centered, self._svd_components)
         return compressed
     
@@ -329,4 +314,4 @@ class TfidfVectorizer:
         Returns:
             Integer representing the size of the vocabulary.
         """
-        return len(self._document_freq)
+        return len(self._word_to_index)

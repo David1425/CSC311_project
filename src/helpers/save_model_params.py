@@ -18,11 +18,9 @@ def extract_mlp_to_dict(mlp, feature_names=None):
     if feature_names is None:
         feature_names = [f"feature_{i}" for i in range(mlp.n_features_in_)]
     
-    # Extract weights and biases
     weights = [w.tolist() for w in mlp.coefs_]
     biases = [b.tolist() for b in mlp.intercepts_]
     
-    # Build layer information
     layers = []
     layer_sizes = [mlp.n_features_in_] + list(mlp.hidden_layer_sizes) + [mlp.n_outputs_]
     
@@ -67,7 +65,6 @@ def extract_mlp_to_dict(mlp, feature_names=None):
         'layers': layers
     }
     
-    # Add training history if available
     if hasattr(mlp, 'loss_curve_'):
         mlp_dict['training_history'] = {
             'loss_curve': [float(loss) for loss in mlp.loss_curve_]
@@ -181,23 +178,18 @@ def extract_bagging_to_dict(bagging_model, feature_names=None):
     if feature_names is None:
         feature_names = [f"feature_{i}" for i in range(bagging_model.n_features_in_)]
     
-    # Get classes from the bagging model
     classes = bagging_model.classes_.tolist()
     
-    # Extract each estimator (tree) with its feature subset
     trees = []
     estimators_features = []
     
     for idx, estimator in enumerate(bagging_model.estimators_):
         if isinstance(estimator, DecisionTreeClassifier):
-            # Get the feature indices used by this tree
             if hasattr(bagging_model, 'estimators_features_'):
                 feature_indices = bagging_model.estimators_features_[idx].tolist()
             else:
-                # If no feature subsampling, use all features
                 feature_indices = list(range(bagging_model.n_features_in_))
             
-            # Create feature names for this tree's subset
             tree_feature_names = [feature_names[i] for i in feature_indices]
             
             tree_dict = extract_tree_to_dict(estimator, tree_feature_names, classes)
@@ -226,7 +218,6 @@ def extract_bagging_to_dict(bagging_model, feature_names=None):
         'estimators_features': estimators_features
     }
     
-    # Add OOB score if available
     if hasattr(bagging_model, 'oob_score_'):
         ensemble_dict['metadata']['oob_score_value'] = float(bagging_model.oob_score_)
     
@@ -253,10 +244,8 @@ def extract_boosting_to_dict(boosting_model, feature_names=None):
     if feature_names is None:
         feature_names = [f"feature_{i}" for i in range(boosting_model.n_features_in_)]
     
-    # Get classes from the boosting model
     classes = boosting_model.classes_.tolist()
     
-    # Extract each estimator (tree) and its weight
     trees = []
     for estimator in boosting_model.estimators_:
         if isinstance(estimator, DecisionTreeClassifier):
@@ -265,7 +254,6 @@ def extract_boosting_to_dict(boosting_model, feature_names=None):
         else:
             raise ValueError(f"Unsupported estimator type: {type(estimator)}")
     
-    # Convert estimator weights to list
     tree_weights = [float(w) for w in boosting_model.estimator_weights_]
     
     ensemble_dict = {

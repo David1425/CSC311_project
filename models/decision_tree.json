@@ -1,0 +1,511 @@
+{
+  "metadata": {
+    "n_features": 4,
+    "n_classes": 3,
+    "n_outputs": 1,
+    "max_depth": 5,
+    "node_count": 43,
+    "feature_names": [
+      "feature_0",
+      "feature_1",
+      "feature_2",
+      "feature_3"
+    ]
+  },
+  "tree": {
+    "node_id": 0,
+    "depth": 0,
+    "n_samples": 240,
+    "impurity": 0.6665625,
+    "is_leaf": false,
+    "feature": 1,
+    "feature_name": "feature_1",
+    "threshold": 0.06224079057574272,
+    "left": {
+      "node_id": 1,
+      "depth": 1,
+      "n_samples": 122,
+      "impurity": 0.5381617844665412,
+      "is_leaf": false,
+      "feature": 0,
+      "feature_name": "feature_0",
+      "threshold": 0.3795556128025055,
+      "left": {
+        "node_id": 2,
+        "depth": 2,
+        "n_samples": 83,
+        "impurity": 0.30889824357671647,
+        "is_leaf": false,
+        "feature": 1,
+        "feature_name": "feature_1",
+        "threshold": -0.3113640695810318,
+        "left": {
+          "node_id": 3,
+          "depth": 3,
+          "n_samples": 65,
+          "impurity": 0.19692307692307698,
+          "is_leaf": false,
+          "feature": 3,
+          "feature_name": "feature_3",
+          "threshold": 0.3289087414741516,
+          "left": {
+            "node_id": 4,
+            "depth": 4,
+            "n_samples": 38,
+            "impurity": 0.314404432132964,
+            "is_leaf": false,
+            "feature": 3,
+            "feature_name": "feature_3",
+            "threshold": 0.21375729888677597,
+            "left": {
+              "node_id": 5,
+              "depth": 5,
+              "n_samples": 37,
+              "impurity": 0.28341855368882396,
+              "is_leaf": true,
+              "class_distribution": [
+                0.10810810810810811,
+                0.05405405405405406,
+                0.8378378378378378
+              ],
+              "predicted_class": 2
+            },
+            "right": {
+              "node_id": 6,
+              "depth": 5,
+              "n_samples": 1,
+              "impurity": 0.0,
+              "is_leaf": true,
+              "class_distribution": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "predicted_class": 0
+            }
+          },
+          "right": {
+            "node_id": 7,
+            "depth": 4,
+            "n_samples": 27,
+            "impurity": 0.0,
+            "is_leaf": true,
+            "class_distribution": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "predicted_class": 2
+          }
+        },
+        "right": {
+          "node_id": 8,
+          "depth": 3,
+          "n_samples": 18,
+          "impurity": 0.5679012345679013,
+          "is_leaf": false,
+          "feature": 1,
+          "feature_name": "feature_1",
+          "threshold": -0.23817484825849533,
+          "left": {
+            "node_id": 9,
+            "depth": 4,
+            "n_samples": 6,
+            "impurity": 0.6111111111111112,
+            "is_leaf": false,
+            "feature": 2,
+            "feature_name": "feature_2",
+            "threshold": -1.2030337750911713,
+            "left": {
+              "node_id": 10,
+              "depth": 5,
+              "n_samples": 2,
+              "impurity": 0.0,
+              "is_leaf": true,
+              "class_distribution": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "predicted_class": 0
+            },
+            "right": {
+              "node_id": 11,
+              "depth": 5,
+              "n_samples": 4,
+              "impurity": 0.625,
+              "is_leaf": true,
+              "class_distribution": [
+                0.25,
+                0.5,
+                0.25
+              ],
+              "predicted_class": 1
+            }
+          },
+          "right": {
+            "node_id": 12,
+            "depth": 4,
+            "n_samples": 12,
+            "impurity": 0.375,
+            "is_leaf": false,
+            "feature": 0,
+            "feature_name": "feature_0",
+            "threshold": -0.8856967091560364,
+            "left": {
+              "node_id": 13,
+              "depth": 5,
+              "n_samples": 7,
+              "impurity": 0.0,
+              "is_leaf": true,
+              "class_distribution": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "predicted_class": 2
+            },
+            "right": {
+              "node_id": 14,
+              "depth": 5,
+              "n_samples": 5,
+              "impurity": 0.48,
+              "is_leaf": true,
+              "class_distribution": [
+                0.6,
+                0.0,
+                0.4
+              ],
+              "predicted_class": 0
+            }
+          }
+        }
+      },
+      "right": {
+        "node_id": 15,
+        "depth": 2,
+        "n_samples": 39,
+        "impurity": 0.44181459566074954,
+        "is_leaf": false,
+        "feature": 3,
+        "feature_name": "feature_3",
+        "threshold": -0.6186088919639587,
+        "left": {
+          "node_id": 16,
+          "depth": 3,
+          "n_samples": 33,
+          "impurity": 0.2644628099173554,
+          "is_leaf": false,
+          "feature": 3,
+          "feature_name": "feature_3",
+          "threshold": -1.4740893840789795,
+          "left": {
+            "node_id": 17,
+            "depth": 4,
+            "n_samples": 4,
+            "impurity": 0.0,
+            "is_leaf": true,
+            "class_distribution": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "predicted_class": 2
+          },
+          "right": {
+            "node_id": 18,
+            "depth": 4,
+            "n_samples": 29,
+            "impurity": 0.06658739595719376,
+            "is_leaf": false,
+            "feature": 3,
+            "feature_name": "feature_3",
+            "threshold": -0.7150216102600098,
+            "left": {
+              "node_id": 19,
+              "depth": 5,
+              "n_samples": 25,
+              "impurity": 0.0,
+              "is_leaf": true,
+              "class_distribution": [
+                0.0,
+                1.0,
+                0.0
+              ],
+              "predicted_class": 1
+            },
+            "right": {
+              "node_id": 20,
+              "depth": 5,
+              "n_samples": 4,
+              "impurity": 0.375,
+              "is_leaf": true,
+              "class_distribution": [
+                0.25,
+                0.75,
+                0.0
+              ],
+              "predicted_class": 1
+            }
+          }
+        },
+        "right": {
+          "node_id": 21,
+          "depth": 3,
+          "n_samples": 6,
+          "impurity": 0.5,
+          "is_leaf": false,
+          "feature": 1,
+          "feature_name": "feature_1",
+          "threshold": -1.2073752209544182,
+          "left": {
+            "node_id": 22,
+            "depth": 4,
+            "n_samples": 3,
+            "impurity": 0.0,
+            "is_leaf": true,
+            "class_distribution": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "predicted_class": 2
+          },
+          "right": {
+            "node_id": 23,
+            "depth": 4,
+            "n_samples": 3,
+            "impurity": 0.0,
+            "is_leaf": true,
+            "class_distribution": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "predicted_class": 0
+          }
+        }
+      }
+    },
+    "right": {
+      "node_id": 24,
+      "depth": 1,
+      "n_samples": 118,
+      "impurity": 0.5178109738580867,
+      "is_leaf": false,
+      "feature": 2,
+      "feature_name": "feature_2",
+      "threshold": -1.5790933966636658,
+      "left": {
+        "node_id": 25,
+        "depth": 2,
+        "n_samples": 28,
+        "impurity": 0.3086734693877551,
+        "is_leaf": false,
+        "feature": 3,
+        "feature_name": "feature_3",
+        "threshold": 0.6697917506098747,
+        "left": {
+          "node_id": 26,
+          "depth": 3,
+          "n_samples": 4,
+          "impurity": 0.5,
+          "is_leaf": false,
+          "feature": 2,
+          "feature_name": "feature_2",
+          "threshold": -2.074966549873352,
+          "left": {
+            "node_id": 27,
+            "depth": 4,
+            "n_samples": 2,
+            "impurity": 0.0,
+            "is_leaf": true,
+            "class_distribution": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "predicted_class": 2
+          },
+          "right": {
+            "node_id": 28,
+            "depth": 4,
+            "n_samples": 2,
+            "impurity": 0.0,
+            "is_leaf": true,
+            "class_distribution": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "predicted_class": 0
+          }
+        },
+        "right": {
+          "node_id": 29,
+          "depth": 3,
+          "n_samples": 24,
+          "impurity": 0.07986111111111116,
+          "is_leaf": false,
+          "feature": 3,
+          "feature_name": "feature_3",
+          "threshold": 3.8817663192749023,
+          "left": {
+            "node_id": 30,
+            "depth": 4,
+            "n_samples": 22,
+            "impurity": 0.0,
+            "is_leaf": true,
+            "class_distribution": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "predicted_class": 1
+          },
+          "right": {
+            "node_id": 31,
+            "depth": 4,
+            "n_samples": 2,
+            "impurity": 0.5,
+            "is_leaf": false,
+            "feature": 3,
+            "feature_name": "feature_3",
+            "threshold": 4.471083402633667,
+            "left": {
+              "node_id": 32,
+              "depth": 5,
+              "n_samples": 1,
+              "impurity": 0.0,
+              "is_leaf": true,
+              "class_distribution": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "predicted_class": 0
+            },
+            "right": {
+              "node_id": 33,
+              "depth": 5,
+              "n_samples": 1,
+              "impurity": 0.0,
+              "is_leaf": true,
+              "class_distribution": [
+                0.0,
+                1.0,
+                0.0
+              ],
+              "predicted_class": 1
+            }
+          }
+        }
+      },
+      "right": {
+        "node_id": 34,
+        "depth": 2,
+        "n_samples": 90,
+        "impurity": 0.422716049382716,
+        "is_leaf": false,
+        "feature": 0,
+        "feature_name": "feature_0",
+        "threshold": -1.1691972613334656,
+        "left": {
+          "node_id": 35,
+          "depth": 3,
+          "n_samples": 21,
+          "impurity": 0.0,
+          "is_leaf": true,
+          "class_distribution": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "predicted_class": 0
+        },
+        "right": {
+          "node_id": 36,
+          "depth": 3,
+          "n_samples": 69,
+          "impurity": 0.4898130644822516,
+          "is_leaf": false,
+          "feature": 3,
+          "feature_name": "feature_3",
+          "threshold": -0.5176337659358978,
+          "left": {
+            "node_id": 37,
+            "depth": 4,
+            "n_samples": 21,
+            "impurity": 0.4897959183673469,
+            "is_leaf": false,
+            "feature": 2,
+            "feature_name": "feature_2",
+            "threshold": -0.6399084031581879,
+            "left": {
+              "node_id": 38,
+              "depth": 5,
+              "n_samples": 5,
+              "impurity": 0.0,
+              "is_leaf": true,
+              "class_distribution": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "predicted_class": 0
+            },
+            "right": {
+              "node_id": 39,
+              "depth": 5,
+              "n_samples": 16,
+              "impurity": 0.21875,
+              "is_leaf": true,
+              "class_distribution": [
+                0.0,
+                0.875,
+                0.125
+              ],
+              "predicted_class": 1
+            }
+          },
+          "right": {
+            "node_id": 40,
+            "depth": 4,
+            "n_samples": 48,
+            "impurity": 0.32986111111111116,
+            "is_leaf": false,
+            "feature": 2,
+            "feature_name": "feature_2",
+            "threshold": -0.8822987973690033,
+            "left": {
+              "node_id": 41,
+              "depth": 5,
+              "n_samples": 7,
+              "impurity": 0.0,
+              "is_leaf": true,
+              "class_distribution": [
+                0.0,
+                1.0,
+                0.0
+              ],
+              "predicted_class": 1
+            },
+            "right": {
+              "node_id": 42,
+              "depth": 5,
+              "n_samples": 41,
+              "impurity": 0.1356335514574658,
+              "is_leaf": true,
+              "class_distribution": [
+                0.926829268292683,
+                0.07317073170731707,
+                0.0
+              ],
+              "predicted_class": 0
+            }
+          }
+        }
+      }
+    }
+  }
+}
