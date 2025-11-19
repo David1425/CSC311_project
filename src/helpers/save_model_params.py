@@ -1,5 +1,84 @@
 import numpy as np
 
+def extract_mlp_to_dict(mlp, feature_names=None):
+    """
+    Extract sklearn MLPClassifier parameters to a JSON-serializable dictionary.
+    
+    Parameters:
+    -----------
+    mlp : sklearn.neural_network.MLPClassifier
+        Fitted MLPClassifier model
+    feature_names : list, optional
+        Names of input features
+        
+    Returns:
+    --------
+    dict : Dictionary containing all model parameters and metadata
+    """
+    if feature_names is None:
+        feature_names = [f"feature_{i}" for i in range(mlp.n_features_in_)]
+    
+    # Extract weights and biases
+    weights = [w.tolist() for w in mlp.coefs_]
+    biases = [b.tolist() for b in mlp.intercepts_]
+    
+    # Build layer information
+    layers = []
+    layer_sizes = [mlp.n_features_in_] + list(mlp.hidden_layer_sizes) + [mlp.n_outputs_]
+    
+    for i, (layer_size, weights_matrix, bias_vector) in enumerate(zip(layer_sizes[1:], weights, biases)):
+        layer_info = {
+            'layer_index': i,
+            'input_size': layer_sizes[i],
+            'output_size': layer_size,
+            'weights': weights_matrix,
+            'biases': bias_vector,
+            'activation': mlp.activation if i < len(layer_sizes) - 2 else mlp.out_activation_
+        }
+        layers.append(layer_info)
+    
+    mlp_dict = {
+        'metadata': {
+            'model_type': 'MLPClassifier',
+            'n_features': int(mlp.n_features_in_),
+            'n_classes': int(mlp.n_outputs_),
+            'n_layers': int(mlp.n_layers_),
+            'n_iter': int(mlp.n_iter_),
+            'loss': float(mlp.loss_) if hasattr(mlp, 'loss_') else None,
+            'feature_names': feature_names,
+            'classes': mlp.classes_.tolist() if hasattr(mlp, 'classes_') else None
+        },
+        'architecture': {
+            'hidden_layer_sizes': list(mlp.hidden_layer_sizes),
+            'activation': mlp.activation,
+            'output_activation': mlp.out_activation_,
+            'solver': mlp.solver,
+            'alpha': float(mlp.alpha),
+            'batch_size': mlp.batch_size,
+            'learning_rate': mlp.learning_rate,
+            'learning_rate_init': float(mlp.learning_rate_init),
+            'max_iter': int(mlp.max_iter),
+            'shuffle': bool(mlp.shuffle),
+            'random_state': int(mlp.random_state) if mlp.random_state is not None else None,
+            'tol': float(mlp.tol),
+            'early_stopping': bool(mlp.early_stopping),
+            'validation_fraction': float(mlp.validation_fraction)
+        },
+        'layers': layers
+    }
+    
+    # Add training history if available
+    if hasattr(mlp, 'loss_curve_'):
+        mlp_dict['training_history'] = {
+            'loss_curve': [float(loss) for loss in mlp.loss_curve_]
+        }
+        if hasattr(mlp, 'validation_scores_'):
+            mlp_dict['training_history']['validation_scores'] = [
+                float(score) for score in mlp.validation_scores_
+            ]
+    
+    return mlp_dict
+
 def extract_tree_to_dict(tree, feature_names=None):
     tree_ = tree.tree_
     
