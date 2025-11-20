@@ -137,3 +137,113 @@ def extract_tree_to_dict(tree, feature_names=None):
     }
     
     return tree_dict
+
+def extract_rf_to_dict(rf, feature_names=None):
+    """
+    Extract sklearn RandomForestClassifier parameters to a JSON-serializable dictionary.
+    
+    Parameters:
+    -----------
+    rf : sklearn.ensemble.RandomForestClassifier
+        Fitted RandomForestClassifier model
+    feature_names : list, optional
+        Names of input features
+        
+    Returns:
+    --------
+    dict : Dictionary containing all model parameters and tree structures
+    """
+    if feature_names is None:
+        feature_names = [f"feature_{i}" for i in range(rf.n_features_in_)]
+    
+    def extract_tree(tree, tree_index):
+        """Extract a single decision tree structure."""
+        tree_ = tree.tree_
+        
+        def recurse(node_id):
+            """Recursively extract tree nodes."""
+            # Check if leaf node
+            if tree_.feature[node_id] == -2:  # Leaf node
+                return {
+                    'node_id': int(node_id),
+                    'is_leaf': True,
+                    'value': tree_.value[node_id].tolist(),
+                    'n_samples': int(tree_.n_node_samples[node_id]),
+                    'impurity': float(tree_.impurity[node_id])
+                }
+            
+            # Internal node
+            left_child = int(tree_.children_left[node_id])
+            right_child = int(tree_.children_right[node_id])
+            
+            return {
+                'node_id': int(node_id),
+                'is_leaf': False,
+                'feature_index': int(tree_.feature[node_id]),
+                'feature_name': feature_names[tree_.feature[node_id]],
+                'threshold': float(tree_.threshold[node_id]),
+                'impurity': float(tree_.impurity[node_id]),
+                'n_samples': int(tree_.n_node_samples[node_id]),
+                'value': tree_.value[node_id].tolist(),
+                'left_child': recurse(left_child),
+                'right_child': recurse(right_child)
+            }
+        
+        return {
+            'tree_index': tree_index,
+            'n_nodes': int(tree_.node_count),
+            'max_depth': int(tree_.max_depth),
+            'structure': recurse(0)
+        }
+    
+    # Extract all trees
+    trees = [extract_tree(estimator, i) for i, estimator in enumerate(rf.estimators_)]
+    
+    rf_dict = {
+        'metadata': {
+            'model_type': 'RandomForestClassifier',
+            'n_features': int(rf.n_features_in_),
+            'n_classes': int(rf.n_classes_),
+            'n_estimators': int(rf.n_estimators),
+            'feature_names': feature_names,
+            'classes': rf.classes_.tolist() if hasattr(rf, 'classes_') else None
+        },
+        'hyperparameters': {
+            'criterion': rf.criterion,
+            'max_depth': int(rf.max_depth) if rf.max_depth is not None else None,
+            'min_samples_split': int(rf.min_samples_split) if isinstance(rf.min_samples_split, int) else float(rf.min_samples_split),
+            'min_samples_leaf': int(rf.min_samples_leaf) if isinstance(rf.min_samples_leaf, int) else float(rf.min_samples_leaf),
+            'min_weight_fraction_leaf': float(rf.min_weight_fraction_leaf),
+            'max_features': rf.max_features,
+            'max_leaf_nodes': int(rf.max_leaf_nodes) if rf.max_leaf_nodes is not None else None,
+            'min_impurity_decrease': float(rf.min_impurity_decrease),
+            'bootstrap': bool(rf.bootstrap),
+            'oob_score': bool(rf.oob_score),
+            'n_jobs': rf.n_jobs,
+            'random_state': int(rf.random_state) if rf.random_state is not None else None,
+            'max_samples': int(rf.max_samples) if isinstance(rf.max_samples, int) else (float(rf.max_samples) if rf.max_samples is not None else None),
+            'ccp_alpha': float(rf.ccp_alpha),
+            'class_weight': rf.class_weight if not isinstance(rf.class_weight, dict) else {str(k): float(v) for k, v in rf.class_weight.items()}
+        },
+        'trees': trees
+    }
+    
+    # Add feature importances
+    if hasattr(rf, 'feature_importances_'):
+        rf_dict['feature_importances'] = {
+            'importances': rf.feature_importances_.tolist(),
+            'feature_importance_map': {
+                name: float(importance) 
+                for name, importance in zip(feature_names, rf.feature_importances_)
+            }
+        }
+    
+    # Add OOB score if available
+    if hasattr(rf, 'oob_score_'):
+        rf_dict['oob_score'] = float(rf.oob_score_)
+    
+    # Add OOB decision function if available
+    if hasattr(rf, 'oob_decision_function_'):
+        rf_dict['oob_decision_function'] = rf.oob_decision_function_.tolist()
+    
+    return rf_dict
