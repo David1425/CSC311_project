@@ -19,112 +19,68 @@ categorical_cols = [
     "How often do you verify this model's responses?"
 ]
 
+def extract_likert_scale(response):
+    response = str(response).strip()
+    if '—' in response:
+        try:
+            return int(response.split('—')[0].strip())
+        except Exception:
+            return 3
+    else:
+        try:
+            return int(response)
+        except Exception:
+            return 3
+
 # --------------------------------------------------
 # Naive Bayes (multiclass Bernoulli)
 # --------------------------------------------------
 
-class NaiveBayesModel:
-    """
-    A template class for machine learning models.
-    """
-    # TODO: Put any needed helper functions here
-    # e.g., debugging utilities, model-specific methods, forward pass, back propagation etc.
+import numpy as np
 
-    def __init__(self, smoothing: float = 0, method: str = 'mle'): 
-        """
-        Bernoulli Naive Bayes (multiclass) with additive smoothing (Laplace).
-        
+class NaiveBayesModel:
+    def __init__(self, smoothing: float = 0, method: str = 'mle'):
+        """ Initialize the Naive Bayes model.
         Args:
-            smoothing: Additive smoothing parameter (α). Used for MLE smoothing.
-            method: Estimation method - 'mle' or 'map'. 
-                    'mle' uses maximum likelihood with Laplace smoothing.
-                    'map' uses maximum a posteriori with Beta(2,2) priors.
+            smoothing: Smoothing parameter (float).
+            method: 'mle' for Maximum Likelihood Estimation, 'map' for Maximum A Posteriori.
         """
-        self.smoothing = smoothing  # Laplace smoothing alpha
+        self.smoothing = smoothing
         self.method = method.lower()
         if self.method not in ['mle', 'map']:
             raise ValueError("method must be 'mle' or 'map'")
-        self.pi = None          # [C]
-        self.theta = None       # [V, C]  P(x_j=1 | class c)
-        self._log_theta = None      # [V, C]
-        self._log_1m_theta = None   # [V, C]
+        self.pi = None
+        self.theta_text = None
+        self._log_theta_text = None
+        self._log_1m_theta_text = None
+        self.theta_quant = None
+        self._log_theta_quant = None
         self.label_to_index = {}
         self.index_to_label = {}
-    
-
-    @staticmethod
-    def build_vocab(dataset: List[Tuple[str, str]]) -> List[str]:
-        """
-        Build vocabulary from a (text,label) dataset.
-
-        Args:
-            dataset: List of (text, label)
-
-        Returns:
-            vocab: Sorted list of unique tokens
-        """
-        vocab_set = set()
-        for text, _ in dataset:
-            for w in text.lower().split():
-                vocab_set.add(w)
-        return sorted(vocab_set)
-
-    @staticmethod
-    def extract_likert_scale(response):
-        """
-        Extract Likert scale value from response string.
-
-        Args:
-            response: String response from CSV
-
-        Returns:
-            likert_value: Integer Likert scale value (1-5)
-        """
-        response = str(response).strip()
-        if '—' in response:
-            likert_value = int(response.split('—')[0].strip())
-        else:
-            try:
-                likert_value = int(response)
-            except:
-                likert_value = 3  # Default to neutral if parsing fails
-        return likert_value
+        self.spec = None
 
     @staticmethod
     def make_bow_with_spec(data, spec=None):
-        """
-        Build features using a persistent per-column vocabulary spec.
-
-        This function returns separate matrices for text (binary bag-of-words)
-        and Likert (ordinal integer) features to allow the model to treat them
-        appropriately.
-
+        """Convert raw CSV data into bag-of-words and quantitative feature matrices.
+        Args:
+            data: List of rows, where the first row is the header.
+            spec: Optional specification dictionary for feature extraction.
         Returns:
-            X_text: [N, D_text] binary text features
-            X_quant: [N, Q] integer Likert values (1..5)
-            t: [N] labels
-            spec: metadata needed to reproduce the mapping
+            X_text: np.ndarray of shape (N, D_text) with bag-of-words features.
+            X_quant: np.ndarray of shape (N, Q) with quantitative features.
+            t: np.ndarray of shape (N,) with class labels as integers.
+            spec: Specification dictionary used for feature extraction.
         """
-        # No data
         if not data or len(data) < 2:
             return np.zeros((0, 0), dtype=np.float32), np.zeros((0, 0), dtype=np.int64), np.zeros((0,), dtype=np.int64), spec if spec else {}
-
-        # Extract header and rows
         header = data[0]
         rows = data[1:]
-
-        # Map column names to indices
         name_to_idx = {col_name: idx for idx, col_name in enumerate(header)}
-
         if spec is None:
-            # Resolve text and likert column indices
             text_indices = [name_to_idx[c] for c in text_cols if c in name_to_idx]
             likert_indices = [name_to_idx[c] for c in categorical_cols if c in name_to_idx]
-
             def tokenize(s):
                 return str(s).lower().split()
-
-            # Build per-column vocabularies (for text columns)
             per_col_vocab = {}
             per_col_vocab_sizes = {}
             for col_idx in text_indices:
@@ -136,23 +92,15 @@ class NaiveBayesModel:
                 sorted_vocab = sorted(vocab_set)
                 per_col_vocab[col_idx] = {w: i for i, w in enumerate(sorted_vocab)}
                 per_col_vocab_sizes[col_idx] = len(sorted_vocab)
-
-            # Compute feature offsets for text features only
             feature_offsets = {}
             offset = 0
             for col_idx in text_indices:
                 Vj = per_col_vocab_sizes[col_idx]
                 feature_offsets[col_idx] = (offset, offset + Vj)
                 offset += Vj
-
-            # Total text dimension and number of Likert questions
             D_text = offset
             Q = len(likert_indices)
-
-            # Label mapping
             label_map = {'ChatGPT': 0, 'Claude': 1, 'Gemini': 2}
-
-            # Build the vocabulary specification
             spec = {
                 'text_indices': text_indices,
                 'likert_indices': likert_indices,
@@ -163,7 +111,6 @@ class NaiveBayesModel:
                 'Q': Q,
             }
         else:
-            # Reuse existing spec
             text_indices = spec['text_indices']
             likert_indices = spec['likert_indices']
             per_col_vocab = spec['per_col_vocab']
@@ -171,18 +118,13 @@ class NaiveBayesModel:
             label_map = spec['label_map']
             D_text = spec['D_text']
             Q = spec['Q']
-
             def tokenize(s):
                 return str(s).lower().split()
-
-        # Core construction: text binary features + likert integer features
         N = len(rows)
         X_text = np.zeros((N, D_text), dtype=np.float32)
         X_quant = np.zeros((N, Q), dtype=np.int64)
         t = np.zeros((N,), dtype=np.int64)
-
         for i, row in enumerate(rows):
-            # Text
             for col_idx in text_indices:
                 if col_idx < len(row):
                     words = set(tokenize(row[col_idx]))
@@ -191,24 +133,20 @@ class NaiveBayesModel:
                     for w in words:
                         if w in lookup:
                             X_text[i, start + lookup[w]] = 1.0
-
-            # Likert (ordinal) - keep as integer values in X_quant
             for qpos, col_idx in enumerate(likert_indices):
                 if col_idx < len(row):
-                    val = NaiveBayesModel.extract_likert_scale(row[col_idx])
+                    val = extract_likert_scale(row[col_idx])
                     if 1 <= val <= 5:
                         X_quant[i, qpos] = int(val)
-
-            # Label
             if 'label' in name_to_idx:
                 lbl = str(row[name_to_idx['label']]).strip()
-                t[i] = label_map.get(lbl, 0)
+                t[i] = spec['label_map'].get(lbl, 0)
             else:
                 assigned = False
                 for cell in row:
                     key = str(cell).strip()
-                    if key in label_map:
-                        t[i] = label_map[key]
+                    if key in spec['label_map']:
+                        t[i] = spec['label_map'][key]
                         assigned = True
                         break
                 if not assigned:
@@ -216,155 +154,132 @@ class NaiveBayesModel:
         return X_text, X_quant, t, spec
 
     def naive_bayes_mle(self, X_text: np.ndarray, X_quant: np.ndarray, t: np.ndarray, num_classes: int = 3):
-        """
-        Vectorized MLE for multiclass Naive Bayes with mixed feature types.
-
-        - `X_text`: binary matrix [N, V_text] for text Bernoulli features
-        - `X_quant`: integer matrix [N, Q] with Likert values in {1..5}
-        - `t`: labels [N]
-
-        Returns and stores:
-            self.pi, self.theta_text [V_text, C], self.theta_quant [Q,5,C]
+        """Maximum Likelihood Estimation for Naive Bayes with text and quantitative features.
+        Args:
+            X_text: np.ndarray of shape (N, V_text) with binary bag-of-words features.
+            X_quant: np.ndarray of shape (N, Q) with quantitative features (Likert scale 1-5).
+            t: np.ndarray of shape (N,) with class labels as integers.
+            num_classes: Number of classes (C).
+        Returns:
+            pi: np.ndarray of shape (C,) with class prior probabilities.
+            theta_text: np.ndarray of shape (V_text, C) with Bernoulli parameters for text features.
+            theta_quant: np.ndarray of shape (Q, 5, C) with Multinomial parameters for quantitative features.
         """
         N, V_text = X_text.shape
         _, Q = X_quant.shape
         C = num_classes
+        alpha = float(self.smoothing)
 
-        # smoothing/pseudo-count: mle uses self.smoothing, map uses alpha=1.0
-        alpha = float(self.smoothing) if self.method == 'mle' else 1.0
-
-        # Class counts and priors
         class_counts = np.bincount(t, minlength=C).astype(np.float64)
         pi = class_counts / max(1, N)
 
-        # One-hot label matrix
         Y = np.eye(C, dtype=np.float64)[t]
 
-        # Text (Bernoulli) parameters
-        counts_text = X_text.T @ Y  # [V_text, C]
-        denom_text = class_counts + 2.0 * alpha  # Bernoulli has two outcomes
-        theta_text = (counts_text + alpha) / denom_text
-        theta_text = np.clip(theta_text, 1e-12, 1.0 - 1e-12)
+        theta_text = np.zeros((V_text, C), dtype=np.float64)
+        if V_text > 0:
+            counts_text = X_text.T @ Y
+            denom_text = class_counts + 2.0 * alpha
+            theta_text = (counts_text + alpha) / denom_text
+            theta_text = np.clip(theta_text, 1e-12, 1.0 - 1e-12)
 
-        # Likert categorical parameters: for each question q and value v in 1..5
         theta_quant = np.zeros((Q, 5, C), dtype=np.float64)
-        for v in range(1, 6):
-            mask_v = (X_quant == v).astype(np.float64)  # [N, Q]
-            counts_v = mask_v.T @ Y  # [Q, C]
-            denom_q = class_counts + 5.0 * alpha
-            theta_quant[:, v-1, :] = (counts_v + alpha) / denom_q
-        theta_quant = np.clip(theta_quant, 1e-12, 1.0 - 1e-12)
+        if Q > 0:
+            for v in range(1, 6):
+                mask_v = (X_quant == v).astype(np.float64)
+                counts_v = mask_v.T @ Y
+                denom_q = class_counts + 5.0 * alpha
+                theta_quant[:, v-1, :] = (counts_v + alpha) / denom_q
+            theta_quant = np.clip(theta_quant, 1e-12, 1.0 - 1e-12)
 
-        # Store
-        self.pi = pi.astype(np.float64)
-        self.theta_text = theta_text.astype(np.float64)
-        self.theta_quant = theta_quant.astype(np.float64)
-        self._log_theta_text = np.log(self.theta_text)
-        self._log_1m_theta_text = np.log(1.0 - self.theta_text)
-        self._log_theta_quant = np.log(self.theta_quant)
+        return pi, theta_text, theta_quant
 
-        return self.pi, self.theta_text, self.theta_quant
-
-    @staticmethod
-    def naive_bayes_map(X, t, num_classes: int = 3):
-        """
-        Compute the parameters $\\pi$ and $\\theta_{jc}$ that maximizes the posterior
-        of the provided data (X, t). We will use the beta distribution with
-        $a=2$ and $b=2$ for all of our parameters.
-
-        **Your solution should be vectorized, and contain no loops**
-
-        Parameters:
-            `X` - a matrix of bag-of-word features of shape [N, V],
-                where N is the number of data points and V is the vocabulary size.
-                X[i,j] should be either 0 or 1. Produced by the make_bow() function.
-            `t` - a vector of class labels of shape [N], with values in [0..C-1].
-
-        Returns:
-            `pi` - a vector; the MAP estimate of the parameter $pi_c = p(c)$
-            `theta` - a matrix of shape [V, C], where `theta[j, c]` corresponds to
-                    the MAP estimate of the parameter $theta_{jc} = p(x_j = 1 | c)$
-        """
-        N, V = X.shape
+    def naive_bayes_map(self, X_text: np.ndarray, X_quant: np.ndarray, t: np.ndarray, num_classes: int = 3):
+        N_samples = X_text.shape[0]
+        V_text = X_text.shape[1]
+        Q = X_quant.shape[1]
         C = num_classes
-        a, b = 2.0, 2.0
 
-        # Class prior with Beta prior equivalent to Dirichlet(1,1,...)?
         class_counts = np.bincount(t, minlength=C).astype(np.float64)
 
-        # MAP estimate for pi
-        pi = (class_counts + (a - 1)) / (N + C * (a + b - 2))
+        # Priors for Beta-Binomial (for text features) - typically Beta(a, b)
+        # Using a=2.0, b=2.0 as in the original `naive_bayes_map` for text features.
+        a_map_text = 2.0
+        b_map_text = 2.0
 
-        # Feature likelihoods with Beta(a,b)
-        Y = np.eye(C, dtype=np.float64)[t]
-        counts_1 = X.T @ Y  # [V, C]
+        # Pi (class priors) using a symmetric Dirichlet(1.0) prior, as it's common for MAP.
+        # This effectively adds 1 pseudo-count to each class.
+        pi = (class_counts + 1.0) / (N_samples + C * 1.0)
 
-        # MAP estimate for theta
-        theta = (counts_1 + (a - 1)) / (class_counts + (a + b - 2))
+        theta_text = np.zeros((V_text, C), dtype=np.float64)
+        if V_text > 0:
+            Y = np.eye(C, dtype=np.float64)[t]
+            counts_text_1 = X_text.T @ Y  # Counts where word is present for each class
+            # MAP estimate for Bernoulli parameter with Beta(a,b) prior is (counts_1 + a - 1) / (N_c + a + b - 2)
+            theta_text = (counts_text_1 + (a_map_text - 1)) / (class_counts + (a_map_text + b_map_text - 2))
+            theta_text = np.clip(theta_text, 1e-12, 1.0 - 1e-12)
 
-        # Numerical safety
-        theta = np.clip(theta, 1e-9, 1 - 1e-9)
+        theta_quant = np.zeros((Q, 5, C), dtype=np.float64)
+        if Q > 0:
+            # Use self.smoothing as the Dirichlet prior parameter (alpha) for each category within each quantitative feature.
+            # If smoothing is 0 (or not positive), use 1.0 for Laplace smoothing as a default for MAP.
+            alpha_dirichlet = self.smoothing if self.smoothing > 0 else 1.0
 
-        return pi, theta
-        
+            for q_idx in range(Q):
+                for v in range(1, 6):  # Likert scale values 1 to 5
+                    # Count samples where X_quant[:, q_idx] == v AND t == c
+                    mask_q_v = (X_quant[:, q_idx] == v)
+                    class_specific_counts = np.bincount(t[mask_q_v], minlength=C).astype(np.float64)
+
+                    # MAP estimate for Multinomial parameter with Dirichlet(alpha) prior
+                    # (counts_v_c + alpha_dirichlet) / (N_c + K * alpha_dirichlet) where K=5 categories
+                    theta_quant[q_idx, v-1, :] = (class_specific_counts + alpha_dirichlet) / (class_counts + 5 * alpha_dirichlet)
+
+            theta_quant = np.clip(theta_quant, 1e-12, 1.0 - 1e-12)
+
+        return pi, theta_text, theta_quant
+
     def train(self, train_X, train_t, learning_rate=None, batch_size=None, n_epochs: int = 1):
-        """
-        Train the model on the provided training data.
-        
+        """Train the Naive Bayes model using the specified method (MLE or MAP).
         Args:
-            train_X (np.array): Training data of shape (N, num_features)
-                where N is the number of data points
-            train_t (np.array): Training targets of shape (N, num_classes)
-            learning_rate (float or callable): Learning rate as a schedule function
-                that takes current epoch and total epochs as input
-            batch_size (int): Number of samples per gradient update
-            n_epochs (int): Number of training epochs
-            
-        Returns:
-            dict: Training history (for NB this is a single closed-form fit)
+            train_X: np.ndarray or tuple of np.ndarrays. If tuple, should be (X_text, X_quant).
+            train_t: np.ndarray of shape (N,) with class labels as integers.
+            learning_rate: Not used in Naive Bayes, included for compatibility.
+            batch_size: Not used in Naive Bayes, included for compatibility.
+            n_epochs: Not used in Naive Bayes, included for compatibility.
         """
-        # Closed-form fit; ignore optimizer params
         num_classes = int(np.max(train_t)) + 1
-
-        # Accept either a single matrix X or a tuple (X_text, X_quant)
         if isinstance(train_X, (list, tuple)) and len(train_X) == 2:
             X_text, X_quant = train_X
         else:
-            # If a single matrix is given, assume all features are text Bernoulli
             X_text = train_X
-            X_quant = np.zeros((X_text.shape[0], 0), dtype=np.int64)
+            X_quant = np.zeros((X_text.shape[0], 0), dtype=np.int64) # Handle text-only input
 
         if self.method == 'mle':
             pi_est, theta_text_est, theta_quant_est = self.naive_bayes_mle(X_text, X_quant, train_t, num_classes=num_classes)
-            # store shapes for history
-            theta_est = (theta_text_est.shape, theta_quant_est.shape)
-        else:  # 'map'
-            # For MAP we currently treat as bernoulli on combined binary features
-            pi_est, theta_est = self.naive_bayes_map(X_text, train_t, num_classes=num_classes)
-            # Store the parameters in instance variables for MAP as well
-            self.pi = pi_est.astype(np.float64)
-            self.theta = theta_est.astype(np.float64)
-            self._log_theta = np.log(self.theta)
-            self._log_1m_theta = np.log(1.0 - self.theta)
+        elif self.method == 'map':
+            pi_est, theta_text_est, theta_quant_est = self.naive_bayes_map(X_text, X_quant, train_t, num_classes=num_classes)
 
-        history = {
-            'method': self.method,
-            'pi': pi_est,
-            'theta_shape': theta_est,
-        }
+        self.pi = pi_est.astype(np.float64)
+        self.theta_text = theta_text_est.astype(np.float64)
+        self.theta_quant = theta_quant_est.astype(np.float64)
+
+        self._log_theta_text = np.log(self.theta_text)
+        self._log_1m_theta_text = np.log(1.0 - self.theta_text)
+        if self.theta_quant is not None and self.theta_quant.size > 0: # Check if theta_quant is not empty
+            self._log_theta_quant = np.log(self.theta_quant)
+        else:
+            self._log_theta_quant = None # Set to None if no quant features
+
+        history = {'method': self.method, 'pi': pi_est, 'theta_text_shape': theta_text_est.shape, 'theta_quant_shape': theta_quant_est.shape}
         return history
-        
+
     def predict(self, X: np.ndarray):
-        """
-        Make predictions on given input data.
-        
+        """Predict class labels for the given input data.
         Args:
-            X (np.array): Input data of shape (N, num_features)
-            
+            X: np.ndarray or tuple of np.ndarrays. If tuple, should be (X_text, X_quant).
         Returns:
-            np.array: Predicted class indices of shape (N,)
+            np.ndarray of shape (N,) with predicted class labels.
         """
-        # Support mixed inputs: either single X matrix, or tuple (X_text, X_quant)
         if isinstance(X, (list, tuple)) and len(X) == 2:
             X_text, X_quant = X
         else:
@@ -373,48 +288,40 @@ class NaiveBayesModel:
 
         if self.pi is None:
             raise ValueError("Model is not trained. Call train() first.")
-
         C = self.pi.shape[0]
-        log_pi = np.log(self.pi + 1e-12)  # [C]
+        log_pi = np.log(self.pi + 1e-12)
 
-        # Text contribution (Bernoulli)
-        if hasattr(self, '_log_theta_text') and self._log_theta_text is not None and X_text.shape[1] > 0:
-            term_pos = X_text @ self._log_theta_text  # [N, C]
+        # Initialize log_post with log_pi, replicating for each sample
+        log_post = np.zeros((X_text.shape[0], C), dtype=np.float64) + log_pi
+
+        if X_text.shape[1] > 0 and self._log_theta_text is not None:
+            term_pos = X_text @ self._log_theta_text
             term_neg = (1.0 - X_text) @ self._log_1m_theta_text
-            log_post = term_pos + term_neg + log_pi
-        elif hasattr(self, '_log_theta') and self._log_theta is not None:
-            term_pos = X_text @ self._log_theta
-            term_neg = (1.0 - X_text) @ self._log_1m_theta
-            log_post = term_pos + term_neg + log_pi
-        else:
-            # No text features
-            log_post = np.zeros((X_text.shape[0], C), dtype=np.float64) + log_pi
+            log_post += term_pos + term_neg
 
-        # Quant (Likert) contribution: add log prob for observed value per question
-        if X_quant is not None and X_quant.shape[1] > 0:
-            if not hasattr(self, '_log_theta_quant'):
-                raise ValueError("Model does not have quant parameters. Train the model with quant features.")
-            # For each sample i and question q, add log P(value | class)
-            N = X_text.shape[0]
-            Q = X_quant.shape[1]
-            # Accumulate per-class log-probs
-            for q in range(Q):
-                vals = X_quant[:, q]  # [N], values in 1..5
-                # gather log probs for this question: [5, C]
-                logp_q = self._log_theta_quant[q]  # [5, C]
-                # For each sample pick the row corresponding to vals-1
-                # Build index array
+        if X_quant.shape[1] > 0 and self._log_theta_quant is not None:
+            # Ensure self._log_theta_quant is compatible (Q, 5, C)
+            if self._log_theta_quant.shape[0] != X_quant.shape[1]:
+                raise ValueError("Mismatch between number of quantitative features and trained model parameters.")
+
+            for q in range(X_quant.shape[1]):
+                vals = X_quant[:, q]
+                logp_q = self._log_theta_quant[q] # Shape (5, C)
+                # Map Likert values (1-5) to array indices (0-4)
                 idx = (vals - 1).clip(0, logp_q.shape[0]-1)
-                logp_pick = logp_q[idx]  # [N, C]
+                # Select probabilities for the observed values for each sample and class
+                logp_pick = logp_q[idx[:, np.newaxis], np.arange(C)] # Shape (N_samples, C)
                 log_post += logp_pick
 
         return np.argmax(log_post, axis=1)
 
     def predict_proba(self, X: np.ndarray):
+        """Predict class probabilities for the given input data.
+        Args:
+            X: np.ndarray or tuple of np.ndarrays. If tuple, should be (X_text, X_quant).
+        Returns:
+            np.ndarray of shape (N, C) with predicted class probabilities.
         """
-        Return class probabilities for each sample.
-        """
-        # Support mixed inputs: either single X matrix, or tuple (X_text, X_quant)
         if isinstance(X, (list, tuple)) and len(X) == 2:
             X_text, X_quant = X
         else:
@@ -423,54 +330,40 @@ class NaiveBayesModel:
 
         if self.pi is None:
             raise ValueError("Model is not trained. Call train() first.")
-
         C = self.pi.shape[0]
         log_pi = np.log(self.pi + 1e-12)
 
-        # Text contribution
-        if hasattr(self, '_log_theta_text') and self._log_theta_text is not None and X_text.shape[1] > 0:
+        log_post = np.zeros((X_text.shape[0], C), dtype=np.float64) + log_pi
+
+        if X_text.shape[1] > 0 and self._log_theta_text is not None:
             term_pos = X_text @ self._log_theta_text
             term_neg = (1.0 - X_text) @ self._log_1m_theta_text
-            log_post = term_pos + term_neg + log_pi
-        elif hasattr(self, '_log_theta') and self._log_theta is not None:
-            term_pos = X_text @ self._log_theta
-            term_neg = (1.0 - X_text) @ self._log_1m_theta
-            log_post = term_pos + term_neg + log_pi
-        else:
-            log_post = np.zeros((X_text.shape[0], C), dtype=np.float64) + log_pi
+            log_post += term_pos + term_neg
 
-        # Quant contribution
-        if X_quant is not None and X_quant.shape[1] > 0:
-            if not hasattr(self, '_log_theta_quant'):
-                raise ValueError("Model does not have quant parameters. Train the model with quant features.")
-            N = X_text.shape[0]
-            Q = X_quant.shape[1]
-            for q in range(Q):
+        if X_quant.shape[1] > 0 and self._log_theta_quant is not None:
+            if self._log_theta_quant.shape[0] != X_quant.shape[1]:
+                raise ValueError("Mismatch between number of quantitative features and trained model parameters.")
+
+            for q in range(X_quant.shape[1]):
                 vals = X_quant[:, q]
                 logp_q = self._log_theta_quant[q]
                 idx = (vals - 1).clip(0, logp_q.shape[0]-1)
-                logp_pick = logp_q[idx]
+                logp_pick = logp_q[idx[:, np.newaxis], np.arange(C)]
                 log_post += logp_pick
 
-        # stabilize and convert to probabilities
         log_post -= np.max(log_post, axis=1, keepdims=True)
         probs = np.exp(log_post)
         probs /= np.sum(probs, axis=1, keepdims=True)
         return probs
-    
+
     def save_model(self, file_path):
-        """
-        Save the model parameters to a file.
-        
+        """Save the trained model parameters to a file.
         Args:
-            file_path (str): Path to the file where model parameters will be saved.
+            file_path: Path to the file where the model will be saved.
         """
         if self.pi is None:
             raise ValueError("Nothing to save: train the model first.")
-        save_dict = {
-            'pi': self.pi,
-            'smoothing': np.array([self.smoothing], dtype=np.float64),
-        }
+        save_dict = {'pi': self.pi, 'smoothing': np.array([self.smoothing], dtype=np.float64)}
         if hasattr(self, 'theta_text') and self.theta_text is not None:
             save_dict['theta_text'] = self.theta_text
         if hasattr(self, 'theta_quant') and self.theta_quant is not None:
@@ -478,18 +371,15 @@ class NaiveBayesModel:
         if hasattr(self, 'spec') and self.spec is not None:
             save_dict['spec'] = np.array([self.spec], dtype=object)
         np.savez_compressed(file_path, **save_dict)
-    
+
     def load_model(self, file_path):
-        """
-        Load model parameters from a file.
-        
+        """Load model parameters from a file.
         Args:
-            file_path (str): Path to the file from which model parameters will be loaded.
+            file_path: Path to the file from which the model will be loaded.
         """
         data = np.load(file_path, allow_pickle=True)
         self.pi = data['pi']
         self.smoothing = float(data['smoothing'][0]) if 'smoothing' in data else 1.0
-        # theta_text
         if 'theta_text' in data:
             self.theta_text = data['theta_text']
             self._log_theta_text = np.log(self.theta_text)
@@ -498,14 +388,12 @@ class NaiveBayesModel:
             self.theta_text = None
             self._log_theta_text = None
             self._log_1m_theta_text = None
-        # theta_quant
         if 'theta_quant' in data:
             self.theta_quant = data['theta_quant']
             self._log_theta_quant = np.log(self.theta_quant)
         else:
             self.theta_quant = None
             self._log_theta_quant = None
-        # spec
         if 'spec' in data:
             try:
                 self.spec = data['spec'].tolist()[0]
@@ -513,7 +401,6 @@ class NaiveBayesModel:
                 self.spec = None
         else:
             self.spec = None
-    
 
 if __name__ == '__main__':
     random.seed(67)
@@ -538,7 +425,7 @@ if __name__ == '__main__':
 
     # Train and evaluate with both methods
     print("Training with MLE (Laplace smoothing)...")
-    model_mle = NaiveBayesModel(smoothing=0.0, method='mle')
+    model_mle = NaiveBayesModel(smoothing=0.5, method='mle')
     model_mle.spec = spec
     model_mle.train((X_train_text, X_train_quant), t_train, n_epochs=1)
 
@@ -548,13 +435,12 @@ if __name__ == '__main__':
         print(f"MLE valid accuracy: {acc_mle:.4f} ({y_pred_mle.size} samples)")
     
     print("\nTraining with MAP (Beta(2,2) priors)...")
-    model_map = NaiveBayesModel(smoothing=1.0, method='map')
+    model_map = NaiveBayesModel(smoothing=0.2, method='map')
     model_map.spec = spec
-    # MAP currently only implemented for Bernoulli text features; pass text matrix
-    model_map.train(X_train_text, t_train, n_epochs=1)
+    model_map.train((X_train_text, X_train_quant), t_train, n_epochs=1)
     
     if X_valid_text.shape[0] > 0:
-        y_pred_map = model_map.predict(X_valid_text)
+        y_pred_map = model_map.predict((X_valid_text, X_valid_quant))
         acc_map = float((y_pred_map == t_valid).mean())
         print(f"MAP valid accuracy: {acc_map:.4f} ({y_pred_map.size} samples)")
     
