@@ -424,7 +424,7 @@ if __name__ == '__main__':
     X_valid_text, X_valid_quant, t_valid, _ = NaiveBayesModel.make_bow_with_spec(valid_data, spec=spec)
 
     # Train and evaluate with both methods
-    print("Training with MLE (Laplace smoothing)...")
+    print("Training with MLE...")
     model_mle = NaiveBayesModel(smoothing=0.5, method='mle')
     model_mle.spec = spec
     model_mle.train((X_train_text, X_train_quant), t_train, n_epochs=1)
@@ -434,7 +434,7 @@ if __name__ == '__main__':
         acc_mle = float((y_pred_mle == t_valid).mean())
         print(f"MLE valid accuracy: {acc_mle:.4f} ({y_pred_mle.size} samples)")
     
-    print("\nTraining with MAP (Beta(2,2) priors)...")
+    print("\nTraining with MAP...")
     model_map = NaiveBayesModel(smoothing=0.2, method='map')
     model_map.spec = spec
     model_map.train((X_train_text, X_train_quant), t_train, n_epochs=1)
