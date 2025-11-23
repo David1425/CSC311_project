@@ -36,10 +36,10 @@ class TfidfVectorizer:
 
         self.truncate_length = truncate_length
         
-        # Instance variables instead of class variables
+        # Instance variables - separate vocab for each text column
         self._document_count = 0
-        self._document_freq = {}
-        self._word_to_index = {}  # Cache for fast word lookup
+        self._document_freq = {}  # Will be dict of dicts: {col_idx: {word: freq}}
+        self._word_to_index = {}  # Will be dict of dicts: {col_idx: {word: idx}}
         
         # Feature scaling parameters (computed during build_vocab)
         self._feature_means = None
@@ -118,6 +118,7 @@ class TfidfVectorizer:
     def build_vocab(self, data_path: str, verbose=True):
         """
         Build vocabulary from the text columns in the data.
+        Each text column gets its own separate vocabulary pool.
 
         Args:
             data_path: Path to the CSV data file.
@@ -131,56 +132,54 @@ class TfidfVectorizer:
         # Count documents correctly - once per row
         self._document_count = len(data)
         
-        # Treat all text columns from one row as a single document
-        for _, row in data.iterrows():
-            # Collect all unique words from all text columns in this row
-            row_words = set()
-            for idx in self._text_columns:
-                col = data.columns[idx]
-                words = row[col].split()
-                row_words.update(words)
-            
-            # Count each unique word once per document (row)
-            for word in row_words:
-                if word and word.strip():  # Skip empty strings
-                    if word not in self._document_freq:
-                        self._document_freq[word] = 0
-                    self._document_freq[word] += 1
+        # Initialize separate vocabularies for each text column
+        for col_idx in self._text_columns:
+            self._document_freq[col_idx] = {}
+            self._word_to_index[col_idx] = {}
         
-        # Alternative: Count each text column separately as its own document
-        # for idx in self._text_columns:
-        #     col = data.columns[idx]
-        #     for text in data[col]:
-        #         words = text.split()
-        #         # Use set to count each word once per document (document frequency)
-        #         unique_words = set(words)
-        #         for word in unique_words:
-        #             if word and word.strip():  # Skip empty strings
-        #                 if word not in self._document_freq:
-        #                     self._document_freq[word] = 0
-        #                 self._document_freq[word] += 1
+        # Build vocabulary for each text column separately
+        for col_idx in self._text_columns:
+            col = data.columns[col_idx]
+            for text in data[col]:
+                words = text.split()
+                # Use set to count each word once per document (document frequency)
+                unique_words = set(words)
+                for word in unique_words:
+                    if word and word.strip():  # Skip empty strings
+                        if word not in self._document_freq[col_idx]:
+                            self._document_freq[col_idx][word] = 0
+                        self._document_freq[col_idx][word] += 1
         
-        # Build word-to-index mapping for fast lookup
-        self._word_to_index = {word: idx for idx, word in enumerate(self._document_freq.keys())}
+        # Build word-to-index mapping for fast lookup (separate for each column)
+        for col_idx in self._text_columns:
+            self._word_to_index[col_idx] = {
+                word: idx for idx, word in enumerate(self._document_freq[col_idx].keys())
+            }
         
         # Compute feature scaling parameters from training data
         if verbose:
             print("Computing feature scaling parameters...")
         self._compute_feature_statistics(data, normalize=True)
         self._is_fitted = True
+        
+        if verbose:
+            print(f"Vocabulary sizes by column:")
+            for col_idx in self._text_columns:
+                print(f"  Column {col_idx}: {len(self._document_freq[col_idx])} words")
     
-    def get_tfidf(self, text, normalize=True):
+    def get_tfidf(self, text, col_idx, normalize=True):
         """
-        Get the TF-IDF vector for a given text.
+        Get the TF-IDF vector for a given text using the vocabulary from a specific column.
 
         Args:
             text: Input text string.
+            col_idx: Column index to use the vocabulary from.
             normalize: Whether to normalize the TF-IDF vector.
         Returns:
             Numpy array representing the TF-IDF vector.
         """
         words = text.split()
-        tfidf_vector = np.zeros(len(self._document_freq))
+        tfidf_vector = np.zeros(len(self._document_freq[col_idx]))
         
         # Handle empty text
         if not words:
@@ -194,10 +193,10 @@ class TfidfVectorizer:
         # Calculate TF-IDF for each unique word
         num_words = len(words)
         for word, count in word_freq.items():
-            if word in self._word_to_index:
+            if word in self._word_to_index[col_idx]:
                 tf = count / num_words
-                idf = np.log((self._document_count + 1) / (self._document_freq[word] + 1)) + 1
-                index = self._word_to_index[word]
+                idf = np.log((self._document_count + 1) / (self._document_freq[col_idx][word] + 1)) + 1
+                index = self._word_to_index[col_idx][word]
                 tfidf_vector[index] = tf * idf
 
         if normalize:
@@ -222,14 +221,10 @@ class TfidfVectorizer:
             feature_vector = []
             
             # Text features (TF-IDF)
-            # for idx in self._text_columns:
-            #     col = data.columns[idx]
-            #     tfidf_vector = self.get_tfidf(row[col], normalize=normalize)
-            #     feature_vector.extend(tfidf_vector.tolist())
-
-            combined_text = ' '.join([row[data.columns[idx]] for idx in self._text_columns])
-            tfidf_vector = self.get_tfidf(combined_text, normalize=normalize)
-            feature_vector.extend(tfidf_vector.tolist())
+            for idx in self._text_columns:
+                col = data.columns[idx]
+                tfidf_vector = self.get_tfidf(row[col], col_idx=idx, normalize=normalize)
+                feature_vector.extend(tfidf_vector.tolist())
             
             # Rating features
             for idx in self._rating_columns:
@@ -282,14 +277,15 @@ class TfidfVectorizer:
         for _, row in data.iterrows():
             feature_vector = []
             
-            # for idx in self._text_columns:
-            #     col = data.columns[idx]
-            #     tfidf_vector = self.get_tfidf(row[col], normalize=normalize)
-            #     feature_vector.extend(tfidf_vector.tolist())
+            # Each text column uses its own vocabulary
+            for idx in self._text_columns:
+                col = data.columns[idx]
+                tfidf_vector = self.get_tfidf(row[col], col_idx=idx, normalize=normalize)
+                feature_vector.extend(tfidf_vector.tolist())
             
-            combined_text = ' '.join([row[data.columns[idx]] for idx in self._text_columns])
-            tfidf_vector = self.get_tfidf(combined_text, normalize=normalize)
-            feature_vector.extend(tfidf_vector.tolist())
+            # combined_text = ' '.join([row[data.columns[idx]] for idx in self._text_columns])
+            # tfidf_vector = self.get_tfidf(combined_text, normalize=normalize)
+            # feature_vector.extend(tfidf_vector.tolist())
             
             for idx in self._rating_columns:
                 col = data.columns[idx]
@@ -326,9 +322,9 @@ class TfidfVectorizer:
     
     def get_vocab_size(self):
         """
-        Get the size of the vocabulary.
+        Get the total size of all vocabularies combined.
 
         Returns:
-            Integer representing the size of the vocabulary.
+            Integer representing the total size of all vocabularies.
         """
-        return len(self._document_freq)
+        return sum(len(self._document_freq[col_idx]) for col_idx in self._text_columns)

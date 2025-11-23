@@ -1,4 +1,5 @@
 import json
+import pickle
 import numpy as np
 
 class MLPClassifier:
@@ -15,8 +16,12 @@ class MLPClassifier:
         self.load_model(json_path)
     
     def load_model(self, path: str) -> None:
-        with open(path, 'r') as f:
-            model_data = json.load(f)
+        if path.endswith('.pkl'):
+            with open(path, 'rb') as f:
+                model_data = pickle.load(f)
+        else:
+            with open(path, 'r') as f:
+                model_data = json.load(f)
         
         self.metadata = model_data['metadata']
         self.architecture = model_data['architecture']

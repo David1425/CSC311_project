@@ -16,7 +16,7 @@ def extract_mlp_to_dict(mlp, feature_names=None):
     dict : Dictionary containing all model parameters and metadata
     """
     if feature_names is None:
-        feature_names = [f"feature_{i}" for i in range(mlp.n_features_in_)]
+        feature_names = [f"{i}" for i in range(mlp.n_features_in_)]
     
     # Extract weights and biases
     weights = [w.tolist() for w in mlp.coefs_]
@@ -24,7 +24,13 @@ def extract_mlp_to_dict(mlp, feature_names=None):
     
     # Build layer information
     layers = []
-    layer_sizes = [mlp.n_features_in_] + list(mlp.hidden_layer_sizes) + [mlp.n_outputs_]
+    # Ensure hidden_layer_sizes is always iterable (handle single int case)
+    if isinstance(mlp.hidden_layer_sizes, int):
+        hidden_sizes = [mlp.hidden_layer_sizes]
+    else:
+        hidden_sizes = list(mlp.hidden_layer_sizes)
+    
+    layer_sizes = [mlp.n_features_in_] + hidden_sizes + [mlp.n_outputs_]
     
     for i, (layer_size, weights_matrix, bias_vector) in enumerate(zip(layer_sizes[1:], weights, biases)):
         layer_info = {
@@ -49,7 +55,7 @@ def extract_mlp_to_dict(mlp, feature_names=None):
             'classes': mlp.classes_.tolist() if hasattr(mlp, 'classes_') else None
         },
         'architecture': {
-            'hidden_layer_sizes': list(mlp.hidden_layer_sizes),
+            'hidden_layer_sizes': hidden_sizes,
             'activation': mlp.activation,
             'output_activation': mlp.out_activation_,
             'solver': mlp.solver,
@@ -72,10 +78,10 @@ def extract_mlp_to_dict(mlp, feature_names=None):
         mlp_dict['training_history'] = {
             'loss_curve': [float(loss) for loss in mlp.loss_curve_]
         }
-        if hasattr(mlp, 'validation_scores_'):
-            mlp_dict['training_history']['validation_scores'] = [
-                float(score) for score in mlp.validation_scores_
-            ]
+        # if hasattr(mlp, 'validation_scores_'):
+        #     mlp_dict['training_history']['validation_scores'] = [
+        #         float(score) for score in mlp.validation_scores_
+        #     ]
     
     return mlp_dict
 
@@ -83,7 +89,7 @@ def extract_tree_to_dict(tree, feature_names=None):
     tree_ = tree.tree_
     
     if feature_names is None:
-        feature_names = [f"feature_{i}" for i in range(tree_.n_features)]
+        feature_names = [f"{i}" for i in range(tree_.n_features)]
     
     def build_json(node_id, depth):
         left_child = tree_.children_left[node_id]

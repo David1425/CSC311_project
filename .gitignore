@@ -3,3 +3,4 @@ src/__pycache__
 src/models/__pycache__
 models/__pycache__
 src/helpers/__pycache__
+models/neural_networks/__pycache__/mlp_classifier.cpython-312.pyc
