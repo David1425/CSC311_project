@@ -198,3 +198,40 @@ class DataLoader:
         self.read_csv(filepath=filepath)
         
         return self.data.iloc[:, :-1], self.data.iloc[:, -1:]
+    
+    
+    def preprocess(self, filepath):
+        """
+        Cleans and preprocess a new file
+        
+        Assumption: Data at the filepath does NOT contain labels
+        
+        Returns preproccsed features
+        """
+        selection_cols = self.data.columns[DATA_COLUMNS['SELECTION_COLUMNS']]
+
+        # Read
+        self.read_csv(filepath)
+        
+        # Clean text data
+        text_cols = self.data.columns[DATA_COLUMNS['TEXT_COLUMNS']]
+        self.data[text_cols] = self.data[text_cols].fillna('').astype(str).apply(lambda x: x.str.lower())
+        self.data['large text'] = self.data[text_cols[0]].str.cat(self.data[text_cols[1:2]], sep=' ')
+            
+        # Generate features from MCQ columns 
+        self._generate_mcq_col_feats()
+        
+        # Generate features from selection columns
+        self._generate_selection_col_feats()
+        
+        # Build vocab and bow matrix
+        self.build_vocab(self.data['large text'])
+        bow_df = pd.DataFrame(self.bow_matrix.toarray(), columns=self.vectorizer.get_feature_names_out()) # type: ignore
+        
+        # Drop old text and selection columns and add vocab features
+        self.data = self.data.drop(columns=selection_cols).drop(columns=text_cols).drop(columns=['large text'])
+        self.data = pd.concat([self.data, bow_df], axis=1)
+        self.data = self.data.dropna(subset=[self.data.columns[DATA_COLUMNS['STUDENT_ID_COLUMN']]])
+            
+        # Return final, clean dataframe
+        return self.data
