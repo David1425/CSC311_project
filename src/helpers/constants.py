@@ -14,6 +14,12 @@ LABELS: Final = {
     'Gemini': 2
 }
 
+PREDICTIONS_TO_LABELS: Final = {
+    0: 'ChatGPT',
+    1: 'Claude',
+    2: 'Gemini'
+}
+
 SELECTIONS: Final = {
     'math computations': 0,
     'writing or debugging code': 1,
@@ -27,3 +33,6 @@ SELECTIONS: Final = {
 
 RAW_DATA_CSV_FP: Final = ["./train_data_raw.csv", "./validation_data_raw.csv", "./test_data_raw.csv"]
 PP_DATA_CSV_FP: Final = ["./train_data.csv", "./validation_data.csv", "./test_data.csv"]
+
+DL_STD_RAW_DATA_CSV_FP: Final = ["./train_data_raw_std.csv", "./validation_data_raw_std.csv", "./test_data_raw_std.csv"]
+DL_STD_PP_DATA_CSV_FP: Final = ["./train_data_std.csv", "./validation_data_std.csv", "./test_data_std.csv"]
