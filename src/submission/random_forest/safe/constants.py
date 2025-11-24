@@ -9,9 +9,9 @@ DATA_COLUMNS: Final = {
 }
 
 LABELS: Final = {
-    'ChatGPT': 0, 
+    'ChatGPT': 2, 
     'Claude': 1, 
-    'Gemini': 2
+    'Gemini': 0
 }
 
 PREDICTIONS_TO_LABELS: Final = {
@@ -53,5 +53,7 @@ STOP_WORDS = {
     'weren', "weren't", 'won', "won't", 'wouldn', "wouldn't"
 }
 
-RAW_DATA_CSV_FP: Final = ["./train_data_raw.csv", "./validation_data_raw.csv", "./test_data_raw.csv"]
-PP_DATA_CSV_FP: Final = ["./train_data.csv", "./validation_data.csv", "./test_data.csv"]
+RF_PATH = 'fitted_bow_rf_cmprsd_std.pkl'
+VOCAB_PATH = 'vocab.csv'
+COLUMNS_PATH = 'columns.csv'
+UNNAMED = 'Unnamed: 0'

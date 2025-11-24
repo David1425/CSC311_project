@@ -191,7 +191,6 @@ class DataLoader:
         # Create a DataFrame with vocabulary words
         vocab_df = pd.DataFrame({'word': list(self.vocab.keys())})
         vocab_df.to_csv(filepath, index=False)
-        print(f"Vocabulary saved to {filepath}")
     
     def load_vocab(self, filepath):
         """
@@ -212,7 +211,6 @@ class DataLoader:
         # Rebuild the vocabulary dictionary with consistent ordering
         self.vocab = {word: idx for idx, word in enumerate(words)}
         
-        print(f"Vocabulary loaded from {filepath} ({len(self.vocab)} words)")
         return self.vocab
     
     def extract_vocab_from_columns_csv(self, columns_filepath, output_vocab_filepath, start_col_index=22):
@@ -246,9 +244,6 @@ class DataLoader:
         # Save to vocab format (one word per row)
         vocab_df = pd.DataFrame({'word': vocab_words})
         vocab_df.to_csv(output_vocab_filepath, index=False)
-        
-        print(f"Extracted {len(vocab_words)} vocabulary words")
-        print(f"Vocabulary saved to {output_vocab_filepath}")
         
         return vocab_words
     
@@ -338,7 +333,6 @@ class DataLoader:
         # Create a DataFrame with column names
         columns_df = pd.DataFrame({'column': self.data.columns.tolist()})
         columns_df.to_csv(filepath, index=False)
-        print(f"Column names saved to {filepath}")
     
     def load_column_names(self, filepath):
         """
@@ -360,7 +354,6 @@ class DataLoader:
         if column_names and column_names[0] == '':
             column_names = column_names[1:]
         
-        print(f"Column names loaded from {filepath} ({len(column_names)} columns)")
         return column_names
     
 

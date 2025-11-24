@@ -476,5 +476,9 @@ class DataLoader:
             self.data = self.data[[col for col in self.data.columns if col != label_col] + [label_col]]
             self.data[label_col] = self.data[label_col].map(LABELS)
             
+            # Remove Unnamed: 0 if exists
+            if 'Unnamed: 0' in self.data.columns:
+                self.data.drop('Unnamed: 0', axis=1, inplace=True)
+            
             # Save as new
             self.data.to_csv(DL_STD_PP_DATA_CSV_FP[i])
