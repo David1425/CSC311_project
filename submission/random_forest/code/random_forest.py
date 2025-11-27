@@ -14,11 +14,9 @@ class RandomForestModel:
         with open(path, 'rb') as f:
             forest_data = pickle.load(f)
             
-        print(forest_data)
         self.metadata = forest_data['metadata']
         self.trees = forest_data['trees']
         self.n_estimators = self.metadata['n_estimators']
-        print(f"Random Forest with {self.n_estimators} trees loaded from: {path}")
     
     def _traverse_tree(self, node: dict, sample: np.ndarray):
         """Traverse a single tree to get prediction with sample weight."""

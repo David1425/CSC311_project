@@ -1,15 +1,11 @@
 import numpy as np
 import sys
+import pickle
 sys.path.append('..')
 
-from constants import PREDICTIONS_TO_LABELS
+from constants import PREDICTIONS_TO_LABELS, RF_PATH, VOCAB_PATH, COLUMNS_PATH, UNNAMED
 from random_forest import RandomForestModel
 from dataloader import DataLoader
-
-# Setting Config
-json_path = 'fitted_bow_rf_cmprsd_std.json'
-vocab_path = 'vocab.csv'
-columns_path = 'columns.csv'
 
 def predict_all(filename):
     """
@@ -18,18 +14,19 @@ def predict_all(filename):
     
     # Extract vocab from training cols CSV
     dl = DataLoader()
-    dl.extract_vocab_from_columns_csv(columns_path, vocab_path)
+    dl.extract_vocab_from_columns_csv(COLUMNS_PATH, VOCAB_PATH)
     
     # Create new dataloader and load vocab and expected columns 
     dataloader = DataLoader()
-    dataloader.load_vocab(vocab_path)
-    expected_cols = dataloader.load_column_names(columns_path)
+    dataloader.load_vocab(VOCAB_PATH)
+    expected_cols = dataloader.load_column_names(COLUMNS_PATH)
     
     # Process test data with expected columns
     preprocessed_data = dataloader.preprocess(filename, expected_cols)
+    preprocessed_data.insert(1, 'Unnamed: 0', preprocessed_data.index)
     
     # Generate model from saved JSON
-    rf = RandomForestModel(json_path)
+    rf = RandomForestModel(RF_PATH)
     
     # Make and clean predictions
     base_predictions = rf.predict(preprocessed_data.to_numpy())

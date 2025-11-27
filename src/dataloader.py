@@ -5,6 +5,9 @@ import re
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
 from helpers.constants import DATA_COLUMNS, LABELS, RAW_DATA_CSV_FP, PP_DATA_CSV_FP
+import pickle
+import sys
+sys.path.append('..')
 
 class DataLoader:
     """
@@ -143,7 +146,7 @@ class DataLoader:
         self.vocab = self.vectorizer.vocabulary_
         return self.vocab
         
-    def generate_Xt_files(self):
+    def generate_Xt_files(self, fitted_count_vectorizer_path):
         """
         Creates a new .csv file containing the cleaned, pre-processed data
         """
@@ -171,6 +174,8 @@ class DataLoader:
             
             # Build vocab and bow matrix
             self.build_vocab(self.data['large text'])
+            with open(fitted_count_vectorizer_path, 'wb') as f:
+                pickle.dump(self.vectorizer, f)
             bow_df = pd.DataFrame(self.bow_matrix.toarray(), columns=self.vectorizer.get_feature_names_out()) # type: ignore
             
             # Drop old text and selection columns and add vocab features
